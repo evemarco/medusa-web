@@ -58,9 +58,9 @@ module.exports = function (ctx) {
 
     build: {
       scopeHoisting: true,
-      // vueRouterMode: 'history',
-      // vueCompiler: true,
-      // gzip: true,
+      vueRouterMode: 'history',
+      vueCompiler: true,
+      gzip: true,
       // analyze: true,
       // extractCSS: false,
       extendWebpack (cfg) {
@@ -69,6 +69,10 @@ module.exports = function (ctx) {
           test: /\.(js|vue)$/,
           loader: 'eslint-loader',
           exclude: /node_modules/
+        })
+        cfg.module.rules.push({
+          test: /\.pug$/,
+          loader: 'pug-plain-loader'
         })
       }
     },
