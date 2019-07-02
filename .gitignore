@@ -1,4 +1,5 @@
 .quasar
+.quasar.env.json
 .DS_Store
 .thumbs.db
 node_modules
@@ -18,3 +19,5 @@ yarn-error.log*
 *.ntvs*
 *.njsproj
 *.sln
+
+.quasar.env.json

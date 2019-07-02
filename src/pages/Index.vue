@@ -1,15 +1,29 @@
 <template lang="pug">
   q-page.flex.flex-center
     .col-auto
-      img(alt="Eve Online logo" src="statics/eve-logo.svg").row.margin-auto.q-pb-md
-      img(alt="LOG IN with EVE Online" src="statics/eve-sso-login-white-large.png").row
+      .row
+        h1.text-light Project Page
+      .row
+        h3.text-light More soon
 </template>
 
 <style>
 </style>
 
 <script>
+import { mapFields } from 'vuex-map-fields'
+
 export default {
-  name: 'PageIndex'
+  name: 'PageIndex',
+  computed: {
+    // `main` is the name of the Vuex module.
+    ...mapFields('main', ['auth'])
+  },
+  mounted () {
+    if (this.$q.localStorage.has('auth')) { this.auth = this.$q.localStorage.getItem('auth') }
+    if (!this.auth) {
+      this.$router.push('login')
+    }
+  }
 }
 </script>

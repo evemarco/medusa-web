@@ -8,18 +8,26 @@
   "private": true,
   "scripts": {
     "lint": "eslint --ext .js,.vue src",
-    "test": "echo \"No test specified\" && exit 0"
+    "test": "echo \"No test specified\" && exit 0",
+    "dev": "cross-env QENV=development quasar dev",
+    "test-dev": "cross-env QENV=test quasar dev",
+    "combined": "cross-env QENV=development+test quasar dev",
+    "build": "cross-env QENV=production quasar build"
   },
   "dependencies": {
     "@quasar/extras": "^1.0.0",
     "axios": "^0.18.1",
+    "jso": "^4.1.1",
     "quasar": "^1.0.0-beta.0",
-    "vue-i18n": "^7.3.3"
+    "vue-i18n": "^7.3.3",
+    "vuex-map-fields": "^1.3.4"
   },
   "devDependencies": {
     "@quasar/app": "^1.0.0-beta.0",
+    "@quasar/quasar-app-extension-qenv": "^1.0.0-beta.1",
     "@vue/eslint-config-standard": "^4.0.0",
     "babel-eslint": "^10.0.1",
+    "cross-env": "^5.2.0",
     "eslint": "^5.10.0",
     "eslint-loader": "^2.1.1",
     "eslint-plugin-vue": "^5.0.0",
