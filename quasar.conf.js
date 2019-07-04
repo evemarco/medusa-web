@@ -6,8 +6,7 @@ module.exports = function (ctx) {
     // --> boot files are part of "main.js"
     boot: [
       'i18n',
-      'axios',
-      'jso'
+      'axios'
     ],
 
     css: [
