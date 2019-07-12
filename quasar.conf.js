@@ -42,7 +42,12 @@ module.exports = function (ctx) {
         'QImg',
         'QSpinner',
         'QChip',
-        'QAvatar'
+        'QAvatar',
+        'QCard',
+        'QCardSection',
+        'QCardActions',
+        'QBadge',
+        'QToggle'
       ],
 
       directives: [
