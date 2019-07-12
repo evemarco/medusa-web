@@ -1,6 +1,6 @@
 {
   "name": "medusa-web",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Web frontend for medusa application (eve online game)",
   "productName": "Medusa Web",
   "cordovaId": "org.cordova.medusa.app",
@@ -15,7 +15,7 @@
     "build": "cross-env QENV=production quasar build"
   },
   "dependencies": {
-    "@quasar/extras": "^1.1.4",
+    "@quasar/extras": "^1.2.0",
     "axios": "^0.18.1",
     "quasar": "^1.0.4",
     "vue-i18n": "^7.3.3",
