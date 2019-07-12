@@ -61,6 +61,20 @@ export default {
       } catch (e) {
         console.error(e)
       }
+    },
+    async getOnline (id) {
+      try {
+
+      } catch (e) {
+
+      }
+    },
+    async getLocation (id) {
+      try {
+
+      } catch (e) {
+
+      }
     }
   },
   async mounted () {
