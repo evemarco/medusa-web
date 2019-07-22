@@ -22,7 +22,7 @@ export default {
     ...mapFields('main', ['id', 'name', 'auth', 'token'])
   },
   created () {
-    // console.log(this.$route.query)
+    console.log(this.$route.query)
     if (this.$q.localStorage.getItem('state') === this.$route.query.state) {
       console.log('State verified')
       this.$axios.get(process.env.API_PASS_URL + '/token?code=' + this.$route.query.code)
@@ -36,7 +36,10 @@ export default {
           this.$q.localStorage.set('name', this.name)
           this.$q.localStorage.set('id', this.id)
           this.$q.localStorage.set('auth', this.auth)
-          this.$router.replace('/')
+          setTimeout(() => {
+            this.$router.replace('/')
+          }, 1000)
+          // this.$router.replace({ name: 'PageIndex' }) // ('/')
         })
         .catch((error) => {
           this.message = 'Connection to backend failed'

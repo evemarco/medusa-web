@@ -11,7 +11,7 @@
           q-card-section {{ alliance.name }} {{ alliance.ticker ? '[' + alliance.ticker + ']' : '' }}
             q-badge(color="primary").on-right.float-right {{ character.alliance_id ? character.alliance_id : 0 }}
         q-card(dark).bg-dark
-          q-img(:src="`http://image.eveonline.com/Render/${ship.ship_type_id ? ship.ship_type_id : 11134}_256.png`")
+          q-img(:src="`https://image.eveonline.com/Render/${ship.ship_type_id ? ship.ship_type_id : 11134}_256.png`")
           q-card-section {{ online.online ? 'Online' : 'Offline' }}
             q-toggle(v-if="online.online" v-model="tr" checked-icon="check" color="positive" unchecked-icon="clear" dark keep-color dense).on-right.float-right.no-pointer-events
             q-toggle(v-else v-model="fa" checked-icon="check" color="negative" unchecked-icon="clear" dark keep-color dense).on-right.float-right.no-pointer-events
@@ -22,6 +22,8 @@
             q-icon(name="flight").rotate-90.on-left
             | {{ shipType }}
             q-badge(color="primary").on-right {{ ship.ship_name }}
+        q-card(dark).bg-dark
+          q-card-section Fleet
       .row.q-gutter-md
         q-btn(@click="refreshToken" color="primary") Refresh Token {{ token.slice(-8) }}
 </template>
@@ -45,7 +47,8 @@ export default {
       location: {},
       solarSystemName: '',
       ship: {},
-      shipType: ''
+      shipType: '',
+      fleet: {}
     }
   },
   computed: {
@@ -111,6 +114,14 @@ export default {
         console.error(e)
       }
       setTimeout(this.getShip, 5000, id)
+    },
+    async GetFleet (id) {
+      try {
+        const fleetPromise = await this.$axios(`https://esi.evetech.net/dev/characters/${id}/fleet/?datasource=tranquility`, { headers: { Authorization: `Bearer ${this.token}` } })
+        this.fleet = fleetPromise.data
+      } catch (e) {
+        console.error(e)
+      }
     },
     async refreshToken () {
       try {

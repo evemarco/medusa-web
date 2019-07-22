@@ -30,7 +30,7 @@ export default {
       // console.log('click login')
       let state = uid()
       this.$q.localStorage.set('state', state)
-      let url = `https://login.eveonline.com/oauth/authorize?response_type=code&redirect_uri=${encodeURI(process.env.CALLBACK_URL)}&client_id=${process.env.CLIENT_ID}&scope=${encodeURI(process.env.SCOPES)}&state=${state}`
+      let url = `https://login.eveonline.com/oauth/authorize?response_type=code&redirect_uri=${process.env.CALLBACK_URL}&client_id=${process.env.CLIENT_ID}&scope=${encodeURIComponent(process.env.SCOPES)}&state=${state}`
       // console.log(url)
       window.location.href = url
     }
