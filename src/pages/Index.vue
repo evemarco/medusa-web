@@ -21,9 +21,26 @@
           q-card-section
             q-icon(name="flight").rotate-90.on-left
             | {{ shipType }}
-            q-badge(color="primary").on-right {{ ship.ship_name }}
+            q-badge(v-if="ship.ship_name" color="primary").on-right {{ ship.ship_name }}
         q-card(dark).bg-dark
-          q-card-section Fleet
+          q-card-section.text-h5
+            q-icon(name="group").on-left
+            | Fleet
+            q-toggle(v-if="fleet.fleet_id" v-model="tr" checked-icon="check" color="positive" unchecked-icon="clear" dark keep-color dense).on-right.float-right.no-pointer-events
+            q-toggle(v-else v-model="fa" checked-icon="check" color="negative" unchecked-icon="clear" dark keep-color dense).on-right.float-right.no-pointer-events
+          template(v-if="fleet.fleet_id")
+            q-card-section You are in fleet
+              q-badge(color="primary").on-right {{ fleet.fleet_id }}
+            q-card-section Role
+              q-badge(color="primary").on-right {{ fleet.role }}
+            q-card-section Boss
+              q-chip(v-if="id" dark color="dark" text-color="light").on-right
+                q-avatar
+                  img(:src="`https://imageserver.eveonline.com/Character/${fleet.fleet_boss_id}_64.jpg`")
+                | {{ boss.name }}
+              q-badge(color="primary").on-right {{ fleet.fleet_boss_id }}
+          template(v-else)
+            q-card-section You are not in fleet
       .row.q-gutter-md
         q-btn(@click="refreshToken" color="primary") Refresh Token {{ token.slice(-8) }}
 </template>
@@ -48,7 +65,9 @@ export default {
       solarSystemName: '',
       ship: {},
       shipType: '',
-      fleet: {}
+      fleet: {},
+      boss: {},
+      bossName: ''
     }
   },
   computed: {
@@ -115,13 +134,21 @@ export default {
       }
       setTimeout(this.getShip, 5000, id)
     },
-    async GetFleet (id) {
+    async getFleet (id) {
       try {
         const fleetPromise = await this.$axios(`https://esi.evetech.net/dev/characters/${id}/fleet/?datasource=tranquility`, { headers: { Authorization: `Bearer ${this.token}` } })
         this.fleet = fleetPromise.data
+        console.log(this.fleet)
+        const bossPromise = await this.$axios(`https://esi.evetech.net/latest/characters/${this.fleet.fleet_boss_id}/?datasource=tranquility`)
+        this.boss = bossPromise.data
       } catch (e) {
-        console.error(e)
+        if (e.response.status === 404) {
+          this.fleet = {}
+        } else {
+          console.error(e)
+        }
       }
+      setTimeout(this.getFleet, 60000, id)
     },
     async refreshToken () {
       try {
@@ -144,6 +171,7 @@ export default {
       this.getOnline(this.id)
       this.getLocation(this.id)
       this.getShip(this.id)
+      this.getFleet(this.id)
     }
   }
 }
