@@ -18,10 +18,12 @@
           q-card-section
             q-icon(name="place").on-left
             | {{ solarSystemName }}
+            q-badge(v-if="solarSystemName" color="primary").on-right {{ location.solar_system_id }}
           q-card-section
             q-icon(name="flight").rotate-90.on-left
             | {{ shipType }}
             q-badge(v-if="ship.ship_name" color="primary").on-right {{ ship.ship_name }}
+            q-badge(v-if="shipType" color="primary").on-right {{ ship.ship_type_id }}
         q-card(dark).bg-dark
           q-card-section.text-h5
             q-icon(name="group").on-left
