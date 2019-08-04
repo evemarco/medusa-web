@@ -10,7 +10,7 @@ export default {
   name: 'PageLogout',
   computed: {
     // `main` is the name of the Vuex module.
-    ...mapFields('main', ['id', 'name', 'auth', 'token'])
+    ...mapFields('main', ['id', 'name', 'auth', 'token', 'character', 'corporation', 'alliance', 'online', 'solarSystemName', 'location', 'ship', 'shipTypeName'])
   },
   mounted () {
     this.name = ''
@@ -19,6 +19,14 @@ export default {
     this.name = this.$q.localStorage.set('name', this.name)
     this.id = this.$q.localStorage.set('id', this.id)
     this.auth = this.$q.localStorage.set('auth', this.auth)
+    this.character = {}
+    this.corporation = {}
+    this.alliance = {}
+    this.online = {}
+    this.location = {}
+    this.solarSystemName = ''
+    this.ship = {}
+    this.shipTypeName = ''
     this.$router.replace('login')
   }
 }

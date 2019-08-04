@@ -2,49 +2,26 @@
   q-page.flex.flex-center
     .col-auto.q-gutter-md
       .row.items-start.q-gutter-md
-        q-card(dark).bg-dark
-          q-img(:src="`https://imageserver.eveonline.com/Character/${id}_256.jpg`")
-          q-card-section {{ name }}
-            q-badge(color="primary").on-right.float-right {{ id }}
-          q-card-section {{ corporation.name }} [{{ corporation.ticker }}]
-            q-badge(color="primary").on-right.float-right {{ character.corporation_id }}
-          q-card-section {{ alliance.name }} {{ alliance.ticker ? '[' + alliance.ticker + ']' : '' }}
-            q-badge(color="primary").on-right.float-right {{ character.alliance_id ? character.alliance_id : 0 }}
-        q-card(dark).bg-dark
-          q-img(:src="`https://image.eveonline.com/Render/${ship.ship_type_id ? ship.ship_type_id : 670}_256.png`")
-          q-card-section {{ online.online ? 'Online' : 'Offline' }}
-            q-toggle(v-if="online.online" v-model="tr" checked-icon="check" color="positive" unchecked-icon="clear" dark keep-color dense).on-right.float-right.no-pointer-events
-            q-toggle(v-else v-model="fa" checked-icon="check" color="negative" unchecked-icon="clear" dark keep-color dense).on-right.float-right.no-pointer-events
-          q-card-section
-            q-icon(name="place").on-left
-            | {{ solarSystemName }}
-            q-badge(v-if="solarSystemName" color="primary").on-right {{ location.solar_system_id }}
-          q-card-section
-            q-icon(name="flight").rotate-90.on-left
-            | {{ shipType }}
-            q-badge(v-if="ship.ship_name" color="primary").on-right {{ ship.ship_name }}
-            q-badge(v-if="shipType" color="primary").on-right {{ ship.ship_type_id }}
-        q-card(dark).bg-dark
-          q-card-section.text-h5
-            q-icon(name="group").on-left
-            | Fleet
-            q-toggle(v-if="fleet.fleet_id" v-model="tr" checked-icon="check" color="positive" unchecked-icon="clear" dark keep-color dense).on-right.float-right.no-pointer-events
-            q-toggle(v-else v-model="fa" checked-icon="check" color="negative" unchecked-icon="clear" dark keep-color dense).on-right.float-right.no-pointer-events
-          template(v-if="fleet.fleet_id")
-            q-card-section You are in fleet
-              q-badge(color="primary").on-right {{ fleet.fleet_id }}
-            q-card-section Role
-              q-badge(color="primary").on-right {{ fleet.role }}
-            q-card-section Boss
-              q-chip(v-if="id" dark color="dark" text-color="light").on-right
-                q-avatar
-                  img(:src="`https://imageserver.eveonline.com/Character/${fleet.fleet_boss_id}_64.jpg`")
-                | {{ bossName }}
-              q-badge(color="primary").on-right {{ fleet.fleet_boss_id }}
-          template(v-else)
-            q-card-section You are not in fleet
         q-card().bg-dark
           q-table(title="Fleet members" :data="dataMembers" :columns="columnsMembers" row-key="character_name" :pagination.sync="pagination" :sort-method="customSort" binary-state-sort dense dark color="primary" :loading="loadingMembers").bg-dark
+            template(v-slot:top-left)
+              .q-table__title
+                q-icon(name="group").on-left
+                | Fleet
+                q-badge(color="primary" v-if="fleet.fleet_id").on-right.vertical-middle {{ fleet.fleet_id }}
+                  q-tooltip
+                    q-card.bg-dark
+                      q-card-section Role
+                        q-badge(color="primary").on-right {{ fleet.role }}
+                      q-card-section Boss
+                        q-chip(v-if="id" dark color="dark" text-color="light").on-right
+                          q-avatar
+                            img(:src="`https://imageserver.eveonline.com/Character/${fleet.fleet_boss_id}_64.jpg`")
+                          | {{ bossName }}
+                        q-badge(color="primary").on-right {{ fleet.fleet_boss_id }}
+            template(v-slot:top-right)
+              q-toggle(v-if="fleet.fleet_id" v-model="tr" checked-icon="check" color="positive" unchecked-icon="clear" dark keep-color dense).on-right.float-right.no-pointer-events
+              q-toggle(v-else v-model="fa" checked-icon="check" color="negative" unchecked-icon="clear" dark keep-color dense).on-right.float-right.no-pointer-events
             template(v-slot:body="props")
               q-tr(:props="props" :class="[{ 'fleet-commander': props.row.role === 'fleet_commander' }, { 'wing-commander': props.row.role === 'wing_commander' }, { 'squad-commander': props.row.role === 'squad_commander' }]")
                 q-td(key="character_name" :props="props" :class="[{ ml10: props.row.role === 'wing_commander' }, { ml20: props.row.role === 'squad_commander' }, { ml30: props.row.role === 'squad_member' }]")
@@ -66,8 +43,6 @@
                   q-badge(color="primary") {{ Math.floor(props.row.wing_id / 100000000) }}
                 q-td(key="squad_id" :props="props")
                   q-badge(color="primary") {{ Math.floor(props.row.squad_id / 100000000) }}
-      .row.q-gutter-md
-        q-btn(@click="refreshToken" color="primary") Refresh Token {{ token.slice(-8) }}
 </template>
 
 <style>
@@ -77,6 +52,9 @@
 import { mapFields } from 'vuex-map-fields'
 import { Mutex } from 'async-mutex'
 import { firstBy } from 'thenby'
+import io from 'socket.io-client'
+
+const socket = io(process.env.SOCKET_IO)
 
 const mutex = new Mutex()
 
@@ -86,14 +64,14 @@ export default {
     return {
       tr: true,
       fa: false,
-      character: {},
-      corporation: {},
-      alliance: {},
-      online: {},
-      location: {},
-      solarSystemName: '',
-      ship: {},
-      shipType: '',
+      // character: {},
+      // corporation: {},
+      // alliance: {},
+      // online: {},
+      // location: {},
+      // solarSystemName: '',
+      // ship: {},
+      // shipTypeName: '',
       fleet: {},
       boss: {},
       bossName: '',
@@ -114,6 +92,7 @@ export default {
         rowsPerPage: 50
         // rowsNumber: xx if getting data from a server
       },
+      receiveFleet: false,
       putFleet: {}
       // putFleet: {
       //   fleet_id: int64,
@@ -141,7 +120,7 @@ export default {
   },
   computed: {
     // `main` is the name of the Vuex module.
-    ...mapFields('main', ['auth', 'id', 'name', 'token']),
+    ...mapFields('main', ['auth', 'id', 'name', 'token', 'socketOn', 'character', 'corporation', 'alliance', 'online', 'location', 'solarSystemName', 'ship', 'shipTypeName']),
     bearer () {
       return btoa(`${process.env.CLIENT_ID}:${this.token}`)
     }
@@ -198,8 +177,8 @@ export default {
       try {
         const locationPromise = await this.$axios(`https://esi.evetech.net/latest/characters/${id}/location/?datasource=tranquility`, { headers: { Authorization: `Bearer ${this.token}` } })
         this.location = locationPromise.data
-        let name = await this.getName(this.location.solar_system_id)
-        this.solarSystemName = name
+        const solarSystemNamePromise = await this.getName(this.location.solar_system_id)
+        this.solarSystemName = solarSystemNamePromise
         // const systemPromise = await this.$axios(`https://esi.evetech.net/latest/universe/systems/${this.location.solar_system_id}/?datasource=tranquility`)
         // this.solarSystemName = systemPromise.data.name
       } catch (e) {
@@ -212,9 +191,9 @@ export default {
         const shipPromise = await this.$axios(`https://esi.evetech.net/latest/characters/${id}/ship/?datasource=tranquility`, { headers: { Authorization: `Bearer ${this.token}` } })
         this.ship = shipPromise.data
         let name = await this.getName(this.ship.ship_type_id)
-        this.shipType = name
+        this.shipTypeName = name
         // const typePromise = await this.$axios(`https://esi.evetech.net/latest/universe/types/${this.ship.ship_type_id}/?datasource=tranquility`)
-        // this.shipType = typePromise.data.name
+        // this.shipTypeName = typePromise.data.name
       } catch (e) {
         console.error(e)
       }
@@ -243,32 +222,39 @@ export default {
     async getFleetMembers (id) {
       try {
         // console.log(this.fleet.fleet_id, this.fleet.fleet_boss_id, id)
-        if (this.fleet.hasOwnProperty('fleet_id') && this.online.online && this.fleet.fleet_boss_id === id) {
-          this.loadingMembers = true
-          const membersPromise = await this.$axios(`https://esi.evetech.net/dev/fleets/${this.fleet.fleet_id}/members/?datasource=tranquility`, { headers: { Authorization: `Bearer ${this.token}` } })
-          this.members = membersPromise.data
-          // console.log(this.members)
-          this.putFleet = {}
-          this.putFleet.members = []
-          this.putFleet.fleet_id = this.fleet.fleet_id
-          this.putFleet.fleet_boss_id = this.fleet.fleet_boss_id
-          this.putFleet.fleet_boss_name = this.bossName
-          for (let member of this.members) {
-            // console.log(member)
-            const characterName = await this.getName(member.character_id)
-            member.character_name = characterName
-            const shipName = await this.getName(member.ship_type_id)
-            member.ship_type_name = shipName
-            const systemName = await this.getName(member.solar_system_id)
-            member.solar_system_name = systemName
-            this.putFleet.members.push(member)
+        if (this.fleet.hasOwnProperty('fleet_id') && this.online.online) {
+          if (this.fleet.fleet_boss_id === id) {
+            this.receiveFleet = false
+            this.loadingMembers = true
+            const membersPromise = await this.$axios(`https://esi.evetech.net/dev/fleets/${this.fleet.fleet_id}/members/?datasource=tranquility`, { headers: { Authorization: `Bearer ${this.token}` } })
+            this.members = membersPromise.data
+            // console.log(this.members)
+            this.putFleet = {}
+            this.putFleet.members = []
+            this.putFleet.fleet_id = this.fleet.fleet_id
+            this.putFleet.fleet_boss_id = this.fleet.fleet_boss_id
+            this.putFleet.fleet_boss_name = this.bossName
+            for (let member of this.members) {
+              // console.log(member)
+              const characterName = await this.getName(member.character_id)
+              member.character_name = characterName
+              const shipName = await this.getName(member.ship_type_id)
+              member.ship_type_name = shipName
+              const systemName = await this.getName(member.solar_system_id)
+              member.solar_system_name = systemName
+              this.putFleet.members.push(member)
+            }
+            socket.emit('boss', this.putFleet)
+            this.dataMembers = this.putFleet.members
+            setTimeout(() => { this.loadingMembers = false }, 1000)
+            console.log(this.putFleet)
+          } else {
+            this.receiveFleet = true
           }
-          this.dataMembers = this.putFleet.members
-          setTimeout(() => { this.loadingMembers = false }, 1000)
-          console.log(this.putFleet)
         } else {
           // console.log('Ignore fleetMembers')
-          this.putFleet = {}
+          this.receiveFleet = false
+          // this.putFleet = {}
         }
       } catch (e) {
         this.loadingMembers = false
@@ -301,6 +287,14 @@ export default {
       this.$router.push('login')
     } else {
       this.id = this.$q.localStorage.getItem('id')
+      this.name = this.$q.localStorage.getItem('name')
+      socket.on('connect', () => {
+        this.socketOn = true
+        socket.emit('name', this.name)
+      })
+      socket.on('disconnect', () => {
+        this.socketOn = false
+      })
       this.token = this.$q.localStorage.getItem('token')
       await this.getCharacter(this.id)
       this.getOnline(this.id)
@@ -308,6 +302,25 @@ export default {
       this.getShip(this.id)
       // this.getFleet(this.id)
       this.getFleetMembers(this.id)
+    }
+  },
+  watch: {
+    fleet: function (newValue, oldValue) {
+      if (newValue.fleet_id !== oldValue.fleet_id) {
+        console.log('Fleet changed', newValue.fleet_id, oldValue.fleet_id)
+        if (oldValue.fleet_id > 0) socket.off(`fleet-${oldValue.fleet_id}`)
+        // console.log(this.receiveFleet)
+        if (newValue.fleet_id > 0) {
+          console.log(`listening on fleet-${newValue.fleet_id}`)
+          socket.on(`fleet-${newValue.fleet_id}`, (fleet) => {
+            console.log(`Refresh fleet-${newValue.fleet_id}`)
+            this.loadingMembers = true
+            this.putFleet = fleet
+            this.dataMembers = this.putFleet.members
+            setTimeout(() => { this.loadingMembers = false }, 1000)
+          })
+        }
+      }
     }
   },
   created () {
@@ -327,6 +340,8 @@ export default {
           error.config.headers.Authorization = `Bearer ${this.token}`
           // console.log(error.config)
           // return
+          return this.$axios.request(error.config)
+        } else if (errorResponse.status === 502) {
           return this.$axios.request(error.config)
         }
       } catch (e) {

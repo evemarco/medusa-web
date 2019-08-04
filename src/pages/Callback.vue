@@ -37,7 +37,7 @@ export default {
           this.$q.localStorage.set('id', this.id)
           this.$q.localStorage.set('auth', this.auth)
           setTimeout(() => {
-            this.$router.replace('/')
+            this.$router.push('/')
           }, 1000)
           // this.$router.replace({ name: 'PageIndex' }) // ('/')
         })
