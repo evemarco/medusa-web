@@ -52,7 +52,8 @@ module.exports = function (ctx) {
         'QTh',
         'QTr',
         'QTd',
-        'QTooltip'
+        'QTooltip',
+        'QCheckbox'
       ],
 
       directives: [

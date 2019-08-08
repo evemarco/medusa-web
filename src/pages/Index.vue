@@ -3,7 +3,7 @@
     .col-auto.q-gutter-md
       .row.items-start.q-gutter-md
         q-card().bg-dark
-          q-table(title="Fleet members" :data="dataMembers" :columns="columnsMembers" row-key="character_name" :pagination.sync="pagination" :sort-method="customSort" binary-state-sort dense dark color="primary" :loading="loadingMembers").bg-dark
+          q-table(title="Fleet members" :data="maskSelected ? filteredData : membersData" :columns="columnsMembers" selection="multiple" :selected.sync="selected" @selection="(details) => filterData(details)" row-key="character_id" :pagination.sync="pagination" :sort-method="customSort" binary-state-sort dense dark color="primary" :loading="loadingMembers").bg-dark
             template(v-slot:top-left)
               .q-table__title
                 q-icon(name="group").on-left
@@ -19,11 +19,14 @@
                             img(:src="`https://imageserver.eveonline.com/Character/${fleet.fleet_boss_id}_64.jpg`")
                           | {{ bossName }}
                         q-badge(color="primary").on-right {{ fleet.fleet_boss_id }}
+                q-btn(dense dark :color="maskSelected ? 'positive' : 'negative'" icon="visibility" size="sm" @click="maskSelected = !maskSelected" :label="`Mask ${maskSelected ? 'On' : 'Off'}`").on-right
             template(v-slot:top-right)
               q-toggle(v-if="fleet.fleet_id" v-model="tr" checked-icon="check" color="positive" unchecked-icon="clear" dark keep-color dense).on-right.float-right.no-pointer-events
               q-toggle(v-else v-model="fa" checked-icon="check" color="negative" unchecked-icon="clear" dark keep-color dense).on-right.float-right.no-pointer-events
             template(v-slot:body="props")
               q-tr(:props="props" :class="[{ 'fleet-commander': props.row.role === 'fleet_commander' }, { 'wing-commander': props.row.role === 'wing_commander' }, { 'squad-commander': props.row.role === 'squad_commander' }]")
+                q-td(auto-width)
+                  q-checkbox(dense v-model="props.selected" dark)
                 q-td(key="character_name" :props="props" :class="[{ ml10: props.row.role === 'wing_commander' }, { ml20: props.row.role === 'squad_commander' }, { ml30: props.row.role === 'squad_member' }]")
                   q-chip(dense dark color="dark" text-color="light")
                     q-avatar
@@ -39,10 +42,13 @@
                   q-icon(name="airplanemode_inactive" color="negative" v-else)
                 q-td(key="solar_system_name" :props="props") {{ props.row.solar_system_name }}
                   q-icon(name="home" v-if="props.row.station_id > 0")
-                q-td(key="wing_id" :props="props")
-                  q-badge(color="primary") {{ Math.floor(props.row.wing_id / 100000000) }}
-                q-td(key="squad_id" :props="props")
-                  q-badge(color="primary") {{ Math.floor(props.row.squad_id / 100000000) }}
+                q-td(key="wing_id" :props="props") {{ props.row.wing_name }}
+                  q-tooltip
+                    q-badge(color="primary") {{ props.row.wing_id }}
+                    //- Math.floor(props.row.wing_id / 100000000)
+                q-td(key="squad_id" :props="props") {{ props.row.squad_name }}
+                  q-tooltip
+                    q-badge(color="primary") {{ props.row.squad_id }}
 </template>
 
 <style>
@@ -64,6 +70,9 @@ export default {
     return {
       tr: true,
       fa: false,
+      selected: [],
+      selectedSet: new Set(),
+      maskSelected: false,
       // character: {},
       // corporation: {},
       // alliance: {},
@@ -77,7 +86,7 @@ export default {
       bossName: '',
       members: [],
       loadingMembers: false,
-      dataMembers: [],
+      membersData: [],
       columnsMembers: [
         { name: 'character_name', align: 'left', label: 'Name', field: 'character_name', sortable: false },
         { name: 'ship_type_name', align: 'left', label: 'Ship', field: 'ship_type_name', sortable: false },
@@ -109,9 +118,11 @@ export default {
       //     solar_system_id: int32, // (entre 30000000 et 39999999)
       //     solar_system_name: string, // ex: Jita
       //     squad_id: int64, // -1 si hors squad
+      //     squad_name: string,
       //     (non présent) station_id: int64, // station ou citadelle, station entre 60000000 et 69999999, citadelle > 1000000000
       //     takes_fleet_warp: boolean, // true si le perso peut prendre le warp de fleet
       //     wing_id: int64 // -1 si hors wing
+      //     wing_name: string,
       //   },
       //   {...},
       //   {...}]
@@ -226,14 +237,25 @@ export default {
           if (this.fleet.fleet_boss_id === id) {
             this.receiveFleet = false
             this.loadingMembers = true
-            const membersPromise = await this.$axios(`https://esi.evetech.net/dev/fleets/${this.fleet.fleet_id}/members/?datasource=tranquility`, { headers: { Authorization: `Bearer ${this.token}` } })
-            this.members = membersPromise.data
+            const membersPromise = this.$axios(`https://esi.evetech.net/dev/fleets/${this.fleet.fleet_id}/members/?datasource=tranquility`, { headers: { Authorization: `Bearer ${this.token}` } })
+            const wingsPromise = this.$axios(`https://esi.evetech.net/dev/fleets/${this.fleet.fleet_id}/wings/?datasource=tranquility`, { headers: { Authorization: `Bearer ${this.token}` } })
+            const [members, wings] = await Promise.all([membersPromise, wingsPromise])
+            this.members = members.data
             // console.log(this.members)
             this.putFleet = {}
             this.putFleet.members = []
             this.putFleet.fleet_id = this.fleet.fleet_id
             this.putFleet.fleet_boss_id = this.fleet.fleet_boss_id
             this.putFleet.fleet_boss_name = this.bossName
+            let idName = []
+            for (let wing of wings.data) {
+              // console.log(wing.id, wing.name)
+              idName[wing.id] = wing.name
+              for (let squad of wing.squads) {
+                // console.log(squad.id, squad.name)
+                idName[squad.id] = squad.name
+              }
+            }
             for (let member of this.members) {
               // console.log(member)
               const characterName = await this.getName(member.character_id)
@@ -242,10 +264,13 @@ export default {
               member.ship_type_name = shipName
               const systemName = await this.getName(member.solar_system_id)
               member.solar_system_name = systemName
+              member.wing_name = idName[member.wing_id]
+              member.squad_name = idName[member.squad_id]
               this.putFleet.members.push(member)
             }
             socket.emit('boss', this.putFleet)
-            this.dataMembers = this.putFleet.members
+            this.membersData = this.putFleet.members
+            this.refreshFilteredData()
             setTimeout(() => { this.loadingMembers = false }, 1000)
             console.log(this.putFleet)
           } else {
@@ -279,6 +304,22 @@ export default {
         .thenBy('role')
         .thenBy('character_name'))
       return data
+    },
+    filterData (details) {
+      if (details.added) {
+        for (let key of details.keys) {
+          this.selectedSet.add(key)
+        }
+      } else {
+        for (let key of details.keys) {
+          this.selectedSet.delete(key)
+        }
+      }
+      this.refreshFilteredData()
+    },
+    refreshFilteredData () {
+      this.filteredData = this.membersData.filter(member => !this.selectedSet.has(member.character_id))
+      // console.log(this.filteredData)
     }
   },
   async mounted () {
@@ -316,7 +357,8 @@ export default {
             console.log(`Refresh fleet-${newValue.fleet_id}`)
             this.loadingMembers = true
             this.putFleet = fleet
-            this.dataMembers = this.putFleet.members
+            this.membersData = this.putFleet.members
+            this.refreshFilteredData()
             setTimeout(() => { this.loadingMembers = false }, 1000)
           })
         }
