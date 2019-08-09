@@ -4,6 +4,7 @@
       .row.items-start.q-gutter-md
         q-card().bg-dark
           q-table(title="Fleet members" :data="maskSelected ? filteredData : membersData" :columns="columnsMembers" selection="multiple" :selected.sync="selected" @selection="(details) => filterData(details)" row-key="character_id" :pagination.sync="pagination" :sort-method="customSort" binary-state-sort dense dark color="primary" :loading="loadingMembers").bg-dark
+            //- Barre titre gauche de la table Fleet
             template(v-slot:top-left)
               .q-table__title
                 q-icon(name="group").on-left
@@ -20,9 +21,19 @@
                           | {{ bossName }}
                         q-badge(color="primary").on-right {{ fleet.fleet_boss_id }}
                 q-btn(dense dark :color="maskSelected ? 'positive' : 'negative'" icon="visibility" size="sm" @click="maskSelected = !maskSelected" :label="`Mask ${maskSelected ? 'On' : 'Off'}`").on-right
+                  q-tooltip Mask selected members if activated
+            //- Barre titre gauche de la table Fleet
             template(v-slot:top-right)
+              div Mass: {{ Math.round(totalMass / 1000000) }} M kg
+                q-tooltip
+                  q-card.bg-dark
+                    q-card-section Mass of ships fleet: {{ totalMass / 1000000 }} M kg
+                    q-card-section It does not includ selected members,
+                      br
+                      | rigs, plates, AB / MWD activated
               q-toggle(v-if="fleet.fleet_id" v-model="tr" checked-icon="check" color="positive" unchecked-icon="clear" dark keep-color dense).on-right.float-right.no-pointer-events
               q-toggle(v-else v-model="fa" checked-icon="check" color="negative" unchecked-icon="clear" dark keep-color dense).on-right.float-right.no-pointer-events
+            //- Données table Fleet
             template(v-slot:body="props")
               q-tr(:props="props" :class="[{ 'fleet-commander': props.row.role === 'fleet_commander' }, { 'wing-commander': props.row.role === 'wing_commander' }, { 'squad-commander': props.row.role === 'squad_commander' }]")
                 q-td(auto-width)
@@ -33,22 +44,47 @@
                       img(:src="`https://imageserver.eveonline.com/Character/${props.row.character_id}_64.jpg`")
                     | {{ props.row.character_name }}
                   q-icon(name="stars" v-if="props.row.character_id === fleet.fleet_boss_id")
+                  q-tooltip
+                    q-card.bg-dark
+                      q-card-section
+                        q-badge(color="primary").on-right {{ props.row.character_id }}
+                      q-card-section Fleet joined
+                        timeago(:datetime="props.row.join_time").on-right
+                q-td(key="corporation_ticker" :props="props") {{ props.row.corporation_ticker }}
+                  q-tooltip
+                    q-card.bg-dark
+                      q-card-section {{ props.row.corporation_name }}
+                        q-badge(color="primary").on-right {{ props.row.corporation_id }}
+                      q-card-section(v-if="props.row.alliance_id") {{ props.row.alliance_name }}
+                        q-badge(color="primary").on-right {{ props.row.alliance_id }}
                 q-td(key="ship_type_name" :props="props")
                   q-chip(dense dark color="dark" text-color="light")
                     q-avatar
                       img(:src="`https://image.eveonline.com/Render/${props.row.ship_type_id}_64.png`")
                     | {{ props.row.ship_type_name }}
+                    q-tooltip
+                      q-card.bg-dark
+                        q-card-section
+                          q-badge(color="primary").on-right {{ props.row.ship_type_id }}
+                        q-card-section Mass: {{ props.row.ship_type_mass / 1000000 }} M kg
                   q-icon(name="airplanemode_active" color="positive" v-if="props.row.takes_fleet_warp")
+                    q-tooltip Can warp fleet
                   q-icon(name="airplanemode_inactive" color="negative" v-else)
+                    q-tooltip Can't warp fleet
                 q-td(key="solar_system_name" :props="props") {{ props.row.solar_system_name }}
                   q-icon(name="home" v-if="props.row.station_id > 0")
                 q-td(key="wing_id" :props="props") {{ props.row.wing_name }}
                   q-tooltip
-                    q-badge(color="primary") {{ props.row.wing_id }}
-                    //- Math.floor(props.row.wing_id / 100000000)
+                    q-card.bg-dark
+                      q-card-section
+                        q-badge(color="primary") {{ props.row.wing_id }}
+                      q-card-section {{ props.row.role_name }}
                 q-td(key="squad_id" :props="props") {{ props.row.squad_name }}
                   q-tooltip
-                    q-badge(color="primary") {{ props.row.squad_id }}
+                    q-card.bg-dark
+                      q-card-section
+                        q-badge(color="primary") {{ props.row.squad_id }}
+                      q-card-section {{ props.row.role_name }}
 </template>
 
 <style>
@@ -73,6 +109,7 @@ export default {
       selected: [],
       selectedSet: new Set(),
       maskSelected: false,
+      totalMass: 0,
       // character: {},
       // corporation: {},
       // alliance: {},
@@ -89,6 +126,7 @@ export default {
       membersData: [],
       columnsMembers: [
         { name: 'character_name', align: 'left', label: 'Name', field: 'character_name', sortable: false },
+        { name: 'corporation_ticker', align: 'center', label: 'Corp', field: 'corporation_ticker', sortable: false },
         { name: 'ship_type_name', align: 'left', label: 'Ship', field: 'ship_type_name', sortable: false },
         { name: 'solar_system_name', align: 'center', label: 'System', field: 'solar_system_name', sortable: false },
         { name: 'wing_id', align: 'center', label: 'Wing', field: 'wing_id', sortable: false },
@@ -119,7 +157,7 @@ export default {
       //     solar_system_name: string, // ex: Jita
       //     squad_id: int64, // -1 si hors squad
       //     squad_name: string,
-      //     (non présent) station_id: int64, // station ou citadelle, station entre 60000000 et 69999999, citadelle > 1000000000
+      //     (non présent, bug CCP) station_id: int64, // station ou citadelle, station entre 60000000 et 69999999, citadelle > 1000000000
       //     takes_fleet_warp: boolean, // true si le perso peut prendre le warp de fleet
       //     wing_id: int64 // -1 si hors wing
       //     wing_name: string,
@@ -139,24 +177,18 @@ export default {
   methods: {
     async getCharacter (id) {
       try {
-        // const wes = await axios('https://api.github.com/users/wesbos');
-        const characterPromise = await this.$axios(`https://esi.evetech.net/latest/characters/${id}/?datasource=tranquility`)
-        this.character = characterPromise.data
-        console.log(this.character)
-        // many requests should be concurrent - don't slow things down!
-        // fire off three requests and save their promises
-        // const characterPromise = axios(`https://esi.evetech.net/latest/characters/${id}/?datasource=tranquility`)
-        if (this.character.alliance_id > 0) {
-          const corporationPromise = this.$axios(`https://esi.evetech.net/latest/corporations/${this.character.corporation_id}/?datasource=tranquility`)
-          const alliancePromise = this.$axios(`https://esi.evetech.net/latest/alliances/${this.character.alliance_id}/?datasource=tranquility`)
-          // await all three promises to come back and destructure the result into their own variables
+        const characterPromise = await this.$axios(`https://esi.evetech.net/latest/characters/${id}/?datasource=tranquility&language=en-us`)
+        let character = characterPromise.data
+        if (character.alliance_id > 0) {
+          const corporationPromise = this.$axios(`https://esi.evetech.net/latest/corporations/${character.corporation_id}/?datasource=tranquility&language=en-us`)
+          const alliancePromise = this.$axios(`https://esi.evetech.net/latest/alliances/${character.alliance_id}/?datasource=tranquility&language=en-us`)
           const [corporation, alliance] = await Promise.all([corporationPromise, alliancePromise])
-          this.corporation = corporation.data
-          this.alliance = alliance.data
+          return ({ character: character, corporation: corporation.data, alliance: alliance.data })
         } else {
-          const corporationPromise = await this.$axios(`https://esi.evetech.net/latest/corporations/${this.character.corporation_id}/?datasource=tranquility`)
-          this.corporation = corporationPromise.data
-          this.alliance = { name: 'No Alliance' }
+          const corporationPromise = await this.$axios(`https://esi.evetech.net/latest/corporations/${character.corporation_id}/?datasource=tranquility&language=en-us`)
+          let corporation = corporationPromise.data
+          let alliance = { id: 0, name: 'No Alliance' }
+          return ({ character: character, corporation: corporation, alliance: alliance })
         }
       } catch (e) {
         console.error(e)
@@ -164,19 +196,19 @@ export default {
     },
     async getName (id) {
       if (id < 100000) {
-        const response = await this.$axios(`https://esi.evetech.net/latest/universe/types/${id}/?datasource=tranquility`)
-        return response.data.name
+        const response = await this.$axios(`https://esi.evetech.net/latest/universe/types/${id}/?datasource=tranquility&language=en-us`)
+        return ({ name: response.data.name, mass: response.data.mass })
       } else if (id < 40000000) {
-        const response = await this.$axios(`https://esi.evetech.net/latest/universe/systems/${id}/?datasource=tranquility`)
+        const response = await this.$axios(`https://esi.evetech.net/latest/universe/systems/${id}/?datasource=tranquility&language=en-us`)
         return response.data.name
       } else {
-        const response = await this.$axios(`https://esi.evetech.net/latest/characters/${id}/?datasource=tranquility`)
+        const response = await this.$axios(`https://esi.evetech.net/latest/characters/${id}/?datasource=tranquility&language=en-us`)
         return response.data.name
       }
     },
     async getOnline (id) {
       try {
-        const onlinePromise = await this.$axios(`https://esi.evetech.net/latest/characters/${id}/online/?datasource=tranquility`, { headers: { Authorization: `Bearer ${this.token}` } })
+        const onlinePromise = await this.$axios(`https://esi.evetech.net/latest/characters/${id}/online/?datasource=tranquility&language=en-us`, { headers: { Authorization: `Bearer ${this.token}` } })
         this.online = onlinePromise.data
         await this.getFleet(id)
       } catch (e) {
@@ -186,7 +218,7 @@ export default {
     },
     async getLocation (id) {
       try {
-        const locationPromise = await this.$axios(`https://esi.evetech.net/latest/characters/${id}/location/?datasource=tranquility`, { headers: { Authorization: `Bearer ${this.token}` } })
+        const locationPromise = await this.$axios(`https://esi.evetech.net/latest/characters/${id}/location/?datasource=tranquility&language=en-us`, { headers: { Authorization: `Bearer ${this.token}` } })
         this.location = locationPromise.data
         const solarSystemNamePromise = await this.getName(this.location.solar_system_id)
         this.solarSystemName = solarSystemNamePromise
@@ -199,7 +231,7 @@ export default {
     },
     async getShip (id) {
       try {
-        const shipPromise = await this.$axios(`https://esi.evetech.net/latest/characters/${id}/ship/?datasource=tranquility`, { headers: { Authorization: `Bearer ${this.token}` } })
+        const shipPromise = await this.$axios(`https://esi.evetech.net/latest/characters/${id}/ship/?datasource=tranquility&language=en-us`, { headers: { Authorization: `Bearer ${this.token}` } })
         this.ship = shipPromise.data
         let name = await this.getName(this.ship.ship_type_id)
         this.shipTypeName = name
@@ -213,7 +245,7 @@ export default {
     async getFleet (id) {
       try {
         if (this.online.online) {
-          const fleetPromise = await this.$axios(`https://esi.evetech.net/dev/characters/${id}/fleet/?datasource=tranquility`, { headers: { Authorization: `Bearer ${this.token}` } })
+          const fleetPromise = await this.$axios(`https://esi.evetech.net/dev/characters/${id}/fleet/?datasource=tranquility&language=en-us`, { headers: { Authorization: `Bearer ${this.token}` } })
           this.fleet = fleetPromise.data
           // console.log(this.fleet)
           let name = await this.getName(this.fleet.fleet_boss_id)
@@ -237,8 +269,8 @@ export default {
           if (this.fleet.fleet_boss_id === id) {
             this.receiveFleet = false
             this.loadingMembers = true
-            const membersPromise = this.$axios(`https://esi.evetech.net/dev/fleets/${this.fleet.fleet_id}/members/?datasource=tranquility`, { headers: { Authorization: `Bearer ${this.token}` } })
-            const wingsPromise = this.$axios(`https://esi.evetech.net/dev/fleets/${this.fleet.fleet_id}/wings/?datasource=tranquility`, { headers: { Authorization: `Bearer ${this.token}` } })
+            const membersPromise = this.$axios(`https://esi.evetech.net/dev/fleets/${this.fleet.fleet_id}/members/?datasource=tranquility&language=en-us`, { headers: { Authorization: `Bearer ${this.token}` } })
+            const wingsPromise = this.$axios(`https://esi.evetech.net/dev/fleets/${this.fleet.fleet_id}/wings/?datasource=tranquility&language=en-us`, { headers: { Authorization: `Bearer ${this.token}` } })
             const [members, wings] = await Promise.all([membersPromise, wingsPromise])
             this.members = members.data
             // console.log(this.members)
@@ -258,10 +290,19 @@ export default {
             }
             for (let member of this.members) {
               // console.log(member)
-              const characterName = await this.getName(member.character_id)
-              member.character_name = characterName
-              const shipName = await this.getName(member.ship_type_id)
-              member.ship_type_name = shipName
+              // const characterName = await this.getName(member.character_id)
+              // member.character_name = characterName
+              const character = await this.getCharacter(member.character_id)
+              // console.log(character)
+              member.character_name = character.character.name
+              member.corporation_id = character.character.corporation_id
+              member.corporation_name = character.corporation.name
+              member.corporation_ticker = character.corporation.ticker
+              member.alliance_id = character.character.alliance_id
+              member.alliance_name = character.alliance.name
+              const ship = await this.getName(member.ship_type_id)
+              member.ship_type_name = ship.name
+              member.ship_type_mass = ship.mass
               const systemName = await this.getName(member.solar_system_id)
               member.solar_system_name = systemName
               member.wing_name = idName[member.wing_id]
@@ -269,7 +310,7 @@ export default {
               this.putFleet.members.push(member)
             }
             socket.emit('boss', this.putFleet)
-            this.membersData = this.putFleet.members
+            this.membersData = [...this.putFleet.members]
             this.refreshFilteredData()
             setTimeout(() => { this.loadingMembers = false }, 1000)
             console.log(this.putFleet)
@@ -319,6 +360,10 @@ export default {
     },
     refreshFilteredData () {
       this.filteredData = this.membersData.filter(member => !this.selectedSet.has(member.character_id))
+      this.totalMass = 0
+      for (let member of this.filteredData) {
+        this.totalMass += member.ship_type_mass
+      }
       // console.log(this.filteredData)
     }
   },
@@ -337,7 +382,10 @@ export default {
         this.socketOn = false
       })
       this.token = this.$q.localStorage.getItem('token')
-      await this.getCharacter(this.id)
+      const characterPromise = await this.getCharacter(this.id)
+      this.character = characterPromise.character
+      this.corporation = characterPromise.corporation
+      this.alliance = characterPromise.alliance
       this.getOnline(this.id)
       this.getLocation(this.id)
       this.getShip(this.id)
@@ -357,7 +405,7 @@ export default {
             console.log(`Refresh fleet-${newValue.fleet_id}`)
             this.loadingMembers = true
             this.putFleet = fleet
-            this.membersData = this.putFleet.members
+            this.membersData = [...this.putFleet.members]
             this.refreshFilteredData()
             setTimeout(() => { this.loadingMembers = false }, 1000)
           })
