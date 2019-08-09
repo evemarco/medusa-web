@@ -7,7 +7,9 @@ module.exports = function (ctx) {
     boot: [
       'i18n',
       'axios',
-      'timeago'
+      'timeago',
+      'pouchdb',
+      'notify-defaults'
     ],
 
     css: [

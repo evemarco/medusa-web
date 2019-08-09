@@ -73,6 +73,8 @@
                     q-tooltip Can't warp fleet
                 q-td(key="solar_system_name" :props="props") {{ props.row.solar_system_name }}
                   q-icon(name="home" v-if="props.row.station_id > 0")
+                  q-tooltip
+                    q-badge(color="primary").on-right {{ props.row.solar_system_id }}
                 q-td(key="wing_id" :props="props") {{ props.row.wing_name }}
                   q-tooltip
                     q-card.bg-dark
@@ -191,7 +193,8 @@ export default {
           return ({ character: character, corporation: corporation, alliance: alliance })
         }
       } catch (e) {
-        console.error(e)
+        this.$q.notify({ message: `Error ${e.status}: ${e.data.error}`, color: 'negative' })
+        console.error('Error getCharacter', e)
       }
     },
     async getName (id) {
@@ -208,11 +211,13 @@ export default {
     },
     async getOnline (id) {
       try {
+        console.log('Check Online')
         const onlinePromise = await this.$axios(`https://esi.evetech.net/latest/characters/${id}/online/?datasource=tranquility&language=en-us`, { headers: { Authorization: `Bearer ${this.token}` } })
         this.online = onlinePromise.data
         await this.getFleet(id)
       } catch (e) {
-        console.error(e)
+        this.$q.notify({ message: `Error ${e.status}: ${e.data.error}`, color: 'negative' })
+        console.error('Error getOnline', e)
       }
       setTimeout(this.getOnline, 60000, id)
     },
@@ -238,26 +243,29 @@ export default {
         // const typePromise = await this.$axios(`https://esi.evetech.net/latest/universe/types/${this.ship.ship_type_id}/?datasource=tranquility`)
         // this.shipTypeName = typePromise.data.name
       } catch (e) {
+        this.$q.notify({ message: `Error ${e.status}: ${e.data.error}`, color: 'negative' })
         console.error(e)
       }
       setTimeout(this.getShip, 5000, id)
     },
     async getFleet (id) {
+      console.log('Check Fleet')
       try {
         if (this.online.online) {
           const fleetPromise = await this.$axios(`https://esi.evetech.net/dev/characters/${id}/fleet/?datasource=tranquility&language=en-us`, { headers: { Authorization: `Bearer ${this.token}` } })
           this.fleet = fleetPromise.data
-          // console.log(this.fleet)
           let name = await this.getName(this.fleet.fleet_boss_id)
           this.bossName = name
         }
         // const bossPromise = await this.$axios(`https://esi.evetech.net/latest/characters/${this.fleet.fleet_boss_id}/?datasource=tranquility`)
         // this.boss = bossPromise.data
       } catch (e) {
-        if (e.response.status === 404) {
+        if (e.status === 404) {
+          this.$q.notify({ message: `Error ${e.status}: ${e.data.error}`, color: 'primary' })
           this.fleet = {}
         } else {
-          console.error(e)
+          this.$q.notify({ message: `Error ${e.status}: ${e.data.error}`, color: 'negative' })
+          console.error('Error getFleet', e)
         }
       }
       // setTimeout(this.getFleet, 60000, id)
@@ -331,11 +339,13 @@ export default {
     async refreshToken () {
       try {
         console.log('Refresh Token')
+        this.$q.notify({ message: 'Refresh Token', color: 'primary' })
         const tokenPromise = await this.$axios.post(`${process.env.API_PASS_URL}/refresh`, { token: this.token, client_ID: process.env.CLIENT_ID })
         this.token = tokenPromise.data.token
         this.$q.localStorage.set('token', this.token)
       } catch (e) {
-        console.error(e)
+        this.$q.notify({ message: `Error ${e.status}: ${e.data.error}`, color: 'negative' })
+        console.error('Error refreshToken', e)
       }
     },
     customSort (rows, sortBy, descending) {
@@ -413,14 +423,15 @@ export default {
       }
     }
   },
-  created () {
+  async created () {
+    this.$q.notify({ message: 'Bienvenue !', color: 'primary' })
     this.$axios.interceptors.response.use(response => {
       // Do something with response data
       return response
     }, async error => {
       // Do something with response error
       let errorResponse = error.response
-      console.log(errorResponse)
+      // console.log(errorResponse)
       const oldToken = this.token
       const release = await mutex.acquire()
       try {
@@ -433,9 +444,13 @@ export default {
           return this.$axios.request(error.config)
         } else if (errorResponse.status === 502) {
           return this.$axios.request(error.config)
+        } else {
+          // console.log(errorResponse)
+          throw errorResponse
         }
       } catch (e) {
-        return e
+        console.error('Error interceptor', e)
+        throw e
       } finally {
         release()
       }
