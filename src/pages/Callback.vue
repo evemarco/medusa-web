@@ -19,7 +19,7 @@ export default {
   },
   computed: {
     // `main` is the name of the Vuex module.
-    ...mapFields('main', ['id', 'name', 'auth', 'token'])
+    ...mapFields('main', ['session', 'auth'])
   },
   created () {
     console.log(this.$route.query)
@@ -28,13 +28,8 @@ export default {
       this.$axios.get(process.env.API_PASS_URL + '/token?code=' + this.$route.query.code)
         .then((response) => {
           console.log(response.data)
-          this.token = response.data.token
-          this.name = response.data.characterName
-          this.id = response.data.characterID
           this.auth = true
-          this.$q.localStorage.set('token', this.token)
-          this.$q.localStorage.set('name', this.name)
-          this.$q.localStorage.set('id', this.id)
+          this.$q.localStorage.set('session', { id: response.data.characterID, name: response.data.characterName, token: response.data.token })
           this.$q.localStorage.set('auth', this.auth)
           setTimeout(() => {
             this.$router.push('/')

@@ -7,27 +7,34 @@
           q-btn(flat dense size="21px" @click="$router.push('/')" no-caps label="MEDUSA Project").logo-font.cursor-pointer
           q-chip(flat dense dark :class="socketOn ? 'bg-positive' : 'bg-negative'" text-color="light").on-right WS
             q-tooltip Socket.IO {{ socketOn ? 'ON' : 'OFF' }}
+          q-chip(flat dense dark color="primary" text-color="light").on-right Queue: {{ queue.size }}
+            q-tooltip
+              q-card.bg-dark
+                q-card-section(v-for="(item, index) of queue" :key="item[0]") {{ item[0] }}
+                  q-badge(color="primary").on-right.float-right {{ item[1] }}
         //- Character
-        q-chip(v-if="id" dark color="dark" text-color="light")
+        q-chip(v-if="session != null && session.hasOwnProperty('id')" dark color="dark" text-color="light")
           q-avatar
-            img(:src="`https://imageserver.eveonline.com/Character/${id}_64.jpg`")
-          | {{ name }}
+            img(:src="`https://imageserver.eveonline.com/Character/${session.id}_64.jpg`")
+          | {{ session.name }}
           q-tooltip
             q-card.bg-dark
-              q-img(:src="`https://imageserver.eveonline.com/Character/${id}_256.jpg`")
+              q-img(:src="`https://imageserver.eveonline.com/Character/${session.id}_256.jpg`")
               q-card-section
                 q-badge(color="positive" v-if="online.online") Online
                 q-badge(color="negative" v-else) Offline
-                q-badge(color="primary").on-right.float-right {{ id }}
+                q-badge(color="primary").on-right.float-right {{ session.id }}
               q-card-section {{ corporation.name }} [{{ corporation.ticker }}]
                 q-badge(color="primary").on-right.float-right {{ character.corporation_id }}
               q-card-section {{ alliance.name }} {{ alliance.ticker ? '[' + alliance.ticker + ']' : '' }}
                 q-badge(color="primary").on-right.float-right {{ character.alliance_id ? character.alliance_id : 0 }}
               q-card-section Access Token
-                q-badge(color="primary").on-right.float-right ...{{ token.slice(-8) }}
+                q-badge(color="primary").on-right.float-right ...{{ session.token.slice(-8) }}
         //- Online
-        q-toggle(v-if="online.online" v-model="tr" checked-icon="check" color="positive" unchecked-icon="clear" dark keep-color dense).on-right.float-right.no-pointer-events
-        q-toggle(v-else v-model="fa" checked-icon="check" color="negative" unchecked-icon="clear" dark keep-color dense).on-right.float-right.no-pointer-events
+        q-toggle(v-if="online.online" v-model="tr" checked-icon="check" color="positive" unchecked-icon="clear" dark keep-color dense).on-right.float-right.cursor-not-allowed
+          q-tooltip Character Online
+        q-toggle(v-else v-model="fa" checked-icon="check" color="negative" unchecked-icon="clear" dark keep-color dense).on-right.float-right.cursor-not-allowed
+          q-tooltip Character Offline
         //- Location
         q-chip(icon="place" dark color="dark" text-color="light" v-if="solarSystemName").on-right
           | {{ solarSystemName }}
@@ -80,11 +87,10 @@ export default {
   },
   computed: {
     // `main` is the name of the Vuex module.
-    ...mapFields('main', ['id', 'name', 'auth', 'token', 'socketOn', 'character', 'corporation', 'alliance', 'online', 'solarSystemName', 'location', 'ship', 'shipTypeName'])
+    ...mapFields('main', ['session', 'auth', 'socketOn', 'queue', 'character', 'corporation', 'alliance', 'online', 'solarSystemName', 'location', 'ship', 'shipTypeName'])
   },
-  mounted () {
-    if (this.$q.localStorage.has('name')) { this.name = this.$q.localStorage.getItem('name') }
-    if (this.$q.localStorage.has('id')) { this.id = this.$q.localStorage.getItem('id') }
+  created () {
+    if (this.$q.localStorage.has('session')) { this.session = this.$q.localStorage.getItem('session') }
     if (this.$q.localStorage.has('auth')) { this.auth = this.$q.localStorage.getItem('auth') }
   },
   methods: {

@@ -1,8 +1,11 @@
 export default {
-  id: 0,
-  name: '',
   auth: false,
-  token: '',
+  session: {
+    id: 0,
+    name: '',
+    token: ''
+  },
+  update: new Date(),
   character: {},
   corporation: {},
   alliance: {},
@@ -11,5 +14,6 @@ export default {
   solarSystemName: '',
   ship: {},
   shipTypeName: '',
-  socketOn: false
+  socketOn: false,
+  queue: new Map()
 }

@@ -5,11 +5,12 @@ module.exports = function (ctx) {
     // app boot file (/src/boot)
     // --> boot files are part of "main.js"
     boot: [
-      'i18n',
+      // 'i18n',
       'axios',
       'timeago',
       'pouchdb',
-      'notify-defaults'
+      'notify-defaults',
+      'chartkick'
     ],
 
     css: [
