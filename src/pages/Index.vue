@@ -674,6 +674,7 @@ export default {
   watch: {
     fleet: function (newValue, oldValue) {
       if (newValue.fleet_id !== oldValue.fleet_id) {
+        socket.emit('name', { name: this.session.name, fleet_id: (newValue.fleet_id ? newValue.fleet_id : 0) })
         console.log('Fleet changed', newValue.fleet_id, oldValue.fleet_id)
         if (oldValue.fleet_id > 0) socket.off(`fleet-${oldValue.fleet_id}`)
         // console.log(this.receiveFleet)
@@ -704,7 +705,11 @@ export default {
         this.update = new Date()
         socket.on('connect', () => {
           this.socketOn = true
-          socket.emit('name', this.session.name)
+          if (this.fleet.hasOwnProperty('fleet_id')) {
+            socket.emit('name', { name: this.session.name, fleet_id: this.fleet.fleet_id })
+          } else {
+            socket.emit('name', { name: this.session.name, fleet_id: 0 })
+          }
         })
         socket.on('disconnect', () => {
           this.socketOn = false
