@@ -555,10 +555,14 @@ export default {
         }
       } catch (e) {
         this.loadingMembers = false
-        console.error('Error getFleetMembers', e)
         if (e.status && e.status === 404) {
+          this.$q.notify({ message: `Error 404: ${e.data.error}`, color: 'primary' })
           this.membersData = []
+          this.filteredData = []
           this.totalMass = 0
+          this.fleet = {}
+        } else {
+          console.error('Error getFleetMembers', e)
         }
       } finally {
         this.queue.set('getFleetMembers', setTimeout(this.getFleetMembers, 5000, id))
@@ -578,7 +582,7 @@ export default {
             const routePromise = await this.$axios(`https://esi.evetech.net/latest/route/${originID}/${member.solar_system_id}/?datasource=tranquility&language=en-us`)
             member.jumps = routePromise.data.length - 1
           } catch (e) {
-            if (e.status === 404) {
+            if (e.status && e.status === 404) {
               member.jumps = -1
             } else {
               console.error('Error getJumps', e)
