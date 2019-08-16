@@ -77,7 +77,7 @@
                   q-icon(name="home" v-if="props.row.station_id > 0")
                   q-tooltip(content-class="bg-dark")
                     q-badge(color="primary") {{ props.row.solar_system_id }}
-                q-td(key="jumps" :props="props") {{ props.row.jumps }}
+                q-td(key="jumps" :props="props") {{ (props.row.jumps !== -1) ? props.row.jumps : '∞' }}
                 q-td(key="wing_id" :props="props") {{ props.row.wing_name }}
                   q-tooltip
                     q-card.bg-dark
@@ -540,6 +540,7 @@ export default {
               this.putFleet.members.push(member)
             }
             socket.emit('boss', this.putFleet)
+            await this.getJumps(this.location.solar_system_id, this.solarSystemName)
             this.membersData = [...this.putFleet.members]
             this.refreshFilteredData()
             setTimeout(() => { this.loadingMembers = false }, 1000)
@@ -563,6 +564,33 @@ export default {
         this.queue.set('getFleetMembers', setTimeout(this.getFleetMembers, 5000, id))
         this.update = new Date()
       }
+    },
+    async getJumps (originID, originName) {
+      for (let member of this.putFleet.members) {
+        if (this.session.id === member.character_id) {
+          member.jumps = 0
+          member.solar_system_name = originName
+          member.solar_system_id = originID
+        } else if (originID === member.solar_system_id) member.jumps = 0
+        else if (this.isWormhole(originName) || this.isWormhole(member.solar_system_name)) member.jumps = -1
+        else {
+          try {
+            const routePromise = await this.$axios(`https://esi.evetech.net/latest/route/${originID}/${member.solar_system_id}/?datasource=tranquility&language=en-us`)
+            member.jumps = routePromise.data.length - 1
+          } catch (e) {
+            if (e.status === 404) {
+              member.jumps = -1
+            } else {
+              console.error('Error getJumps', e)
+            }
+          }
+        }
+      }
+    },
+    isWormhole (systemName) {
+      if (systemName === 'Thera') return true
+      else if (systemName.length === 7 && systemName[0] === 'J') return true
+      else return false
     },
     async refreshToken (token) {
       try {
@@ -674,7 +702,7 @@ export default {
   watch: {
     fleet: function (newValue, oldValue) {
       if (newValue.fleet_id !== oldValue.fleet_id) {
-        socket.emit('name', { name: this.session.name, fleet_id: (newValue.fleet_id ? newValue.fleet_id : 0) })
+        socket.emit('name', { name: this.session.name, character_id: this.session.id, fleet_id: (newValue.fleet_id ? newValue.fleet_id : 0) })
         console.log('Fleet changed', newValue.fleet_id, oldValue.fleet_id)
         if (oldValue.fleet_id > 0) socket.off(`fleet-${oldValue.fleet_id}`)
         // console.log(this.receiveFleet)
@@ -705,11 +733,7 @@ export default {
         this.update = new Date()
         socket.on('connect', () => {
           this.socketOn = true
-          if (this.fleet.hasOwnProperty('fleet_id')) {
-            socket.emit('name', { name: this.session.name, fleet_id: this.fleet.fleet_id })
-          } else {
-            socket.emit('name', { name: this.session.name, fleet_id: 0 })
-          }
+          socket.emit('name', { name: this.session.name, character_id: this.session.id, fleet_id: this.fleet.hasOwnProperty('fleet_id') ? this.fleet.fleet_id : 0 })
         })
         socket.on('disconnect', () => {
           this.socketOn = false
