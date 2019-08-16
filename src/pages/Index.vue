@@ -635,6 +635,16 @@ export default {
       }
       // console.log(this.filteredData)
     },
+    async refreshFleet (fleet) {
+      this.loadingMembers = true
+      this.putFleet = fleet
+      await this.getJumps(this.location.solar_system_id, this.solarSystemName)
+      this.membersData = [...this.putFleet.members]
+      this.refreshFilteredData()
+      setTimeout(() => {
+        this.loadingMembers = false
+      }, 1000)
+    },
     startQueue (id) {
       this.getOnline(id)
       this.getLocation(id)
@@ -714,15 +724,13 @@ export default {
           console.log(`listening on fleet-${newValue.fleet_id}`)
           socket.on(`fleet-${newValue.fleet_id}`, (fleet) => {
             console.log(`Refresh fleet-${newValue.fleet_id}`)
-            this.loadingMembers = true
-            this.putFleet = fleet
-            this.membersData = [...this.putFleet.members]
-            this.refreshFilteredData()
-            setTimeout(() => { this.loadingMembers = false }, 1000)
+            this.refreshFleet(fleet)
           })
         } else {
           this.membersData = []
+          this.filteredData = []
           this.totalMass = 0
+          this.fleet = {}
         }
       }
     }
