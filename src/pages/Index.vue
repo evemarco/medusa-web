@@ -384,35 +384,51 @@ export default {
   },
   methods: {
     async getCharacter (id) {
-      try {
-        console.log('Check Character', id)
-        const characterPromise = await this.$axios(`https://esi.evetech.net/latest/characters/${id}/?datasource=tranquility&language=en-us`)
-        let character = characterPromise.data
-        if (character.alliance_id > 0) {
-          const corporationPromise = this.$axios(`https://esi.evetech.net/latest/corporations/${character.corporation_id}/?datasource=tranquility&language=en-us`)
-          const alliancePromise = this.$axios(`https://esi.evetech.net/latest/alliances/${character.alliance_id}/?datasource=tranquility&language=en-us`)
-          const [corporation, alliance] = await Promise.all([corporationPromise, alliancePromise])
-          return ({ character: character, corporation: corporation.data, alliance: alliance.data })
-        } else {
-          const corporationPromise = await this.$axios(`https://esi.evetech.net/latest/corporations/${character.corporation_id}/?datasource=tranquility&language=en-us`)
-          let corporation = corporationPromise.data
-          let alliance = { id: 0, name: 'No Alliance' }
-          return ({ character: character, corporation: corporation, alliance: alliance })
+      const result = await this.$db.characters.findOne({ _id: id })
+      if (result) {
+        return ({ character: result.character, corporation: result.corporation, alliance: result.alliance })
+      } else {
+        try {
+          console.log('Check Character', id)
+          const characterPromise = await this.$axios(`https://esi.evetech.net/latest/characters/${id}/?datasource=tranquility&language=en-us`)
+          let character = characterPromise.data
+          if (character.alliance_id > 0) {
+            const corporationPromise = this.$axios(`https://esi.evetech.net/latest/corporations/${character.corporation_id}/?datasource=tranquility&language=en-us`)
+            const alliancePromise = this.$axios(`https://esi.evetech.net/latest/alliances/${character.alliance_id}/?datasource=tranquility&language=en-us`)
+            const [corporation, alliance] = await Promise.all([corporationPromise, alliancePromise])
+            this.$db.characters.update({ _id: id }, { _id: id, character: character, corporation: corporation.data, alliance: alliance.data }, { upsert: true })
+            return ({ character: character, corporation: corporation.data, alliance: alliance.data })
+          } else {
+            const corporationPromise = await this.$axios(`https://esi.evetech.net/latest/corporations/${character.corporation_id}/?datasource=tranquility&language=en-us`)
+            let corporation = corporationPromise.data
+            let alliance = { id: 0, name: 'No Alliance' }
+            this.$db.characters.update({ _id: id }, { _id: id, character: character, corporation: corporation, alliance: alliance }, { upsert: true })
+            return ({ character: character, corporation: corporation, alliance: alliance })
+          }
+        } catch (e) {
+          console.error('Error getCharacter', e)
         }
-      } catch (e) {
-        console.error('Error getCharacter', e)
       }
     },
     async getName (id) {
+      const result = await this.$db.names.findOne({ _id: id })
       if (id < 100000) {
-        const response = await this.$axios(`https://esi.evetech.net/latest/universe/types/${id}/?datasource=tranquility&language=en-us`)
-        return ({ name: response.data.name, mass: response.data.mass })
+        if (result) return ({ name: result.name, mass: result.mass })
+        else {
+          const response = await this.$axios(`https://esi.evetech.net/latest/universe/types/${id}/?datasource=tranquility&language=en-us`)
+          this.$db.names.update({ _id: id }, { _id: id, name: response.data.name, mass: response.data.mass }, { upsert: true })
+          return ({ name: response.data.name, mass: response.data.mass })
+        }
       } else if (id < 40000000) {
-        const response = await this.$axios(`https://esi.evetech.net/latest/universe/systems/${id}/?datasource=tranquility&language=en-us`)
-        return response.data.name
+        if (result) return result.name
+        else {
+          const response = await this.$axios(`https://esi.evetech.net/latest/universe/systems/${id}/?datasource=tranquility&language=en-us`)
+          this.$db.names.update({ _id: id }, { _id: id, name: response.data.name }, { upsert: true })
+          return response.data.name
+        }
       } else {
-        const response = await this.$axios(`https://esi.evetech.net/latest/characters/${id}/?datasource=tranquility&language=en-us`)
-        return response.data.name
+        const character = await this.getCharacter(id)
+        return character.character.name
       }
     },
     async getOnline (id) {
@@ -457,8 +473,6 @@ export default {
         this.ship = shipPromise.data
         let name = await this.getName(this.ship.ship_type_id)
         this.shipTypeName = name
-        // const typePromise = await this.$axios(`https://esi.evetech.net/latest/universe/types/${this.ship.ship_type_id}/?datasource=tranquility`)
-        // this.shipTypeName = typePromise.data.name
       } catch (e) {
         console.error('Error getShip', e)
       } finally {
@@ -579,8 +593,14 @@ export default {
         else if (this.isWormhole(originName) || this.isWormhole(member.solar_system_name)) member.jumps = -1
         else {
           try {
-            const routePromise = await this.$axios(`https://esi.evetech.net/latest/route/${originID}/${member.solar_system_id}/?datasource=tranquility&language=en-us`)
-            member.jumps = routePromise.data.length - 1
+            const key = `${Math.min(originID, member.solar_system_id)}-${Math.max(originID, member.solar_system_id)}`
+            const result = await this.$db.jumps.findOne({ _id: key })
+            if (result) member.jumps = result.jumps
+            else {
+              const routePromise = await this.$axios(`https://esi.evetech.net/latest/route/${originID}/${member.solar_system_id}/?datasource=tranquility&language=en-us`)
+              member.jumps = routePromise.data.length - 1
+              this.$db.jumps.update({ _id: key }, { _id: key, jumps: member.jumps }, { upsert: true })
+            }
           } catch (e) {
             if (e.status && e.status === 404) {
               member.jumps = -1
@@ -736,6 +756,7 @@ export default {
     }
   },
   async created () {
+    this.$db.characters.find({})
     if (this.$q.localStorage.has('auth')) { this.auth = this.$q.localStorage.getItem('auth') }
     if (!this.auth) {
       this.$router.push('login')

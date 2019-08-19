@@ -8,9 +8,9 @@ module.exports = function (ctx) {
       // 'i18n',
       'axios',
       'timeago',
-      'pouchdb',
       'notify-defaults',
-      'chartkick'
+      'chartkick',
+      'nedb'
     ],
 
     css: [
