@@ -37,9 +37,9 @@
           q-tooltip Character Offline
         //- Location
         q-chip(icon="place" dark color="dark" text-color="light" v-if="solarSystemName").on-right
-          | {{ solarSystemName }}
-          q-tooltip
-            q-badge(color="primary") {{ location.solar_system_id }}
+          | {{ solarSystemName.name }}
+          q-tooltip {{ solarSystemName.security_status ? solarSystemName.security_status.toFixed(1) : '' }}
+            q-badge(color="primary").on-right {{ location.solar_system_id }}
         //- Ship
         q-chip(dark color="dark" text-color="light" v-if="shipTypeName").on-right
           q-avatar

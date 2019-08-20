@@ -73,10 +73,12 @@
                     q-tooltip(content-class="bg-dark")  Can warp fleet
                   q-icon(name="airplanemode_inactive" color="negative" v-else)
                     q-tooltip(content-class="bg-dark") Can't warp fleet
-                q-td(key="solar_system_name" :props="props") {{ props.row.solar_system_name }}
+                q-td(key="solar_system_name" :props="props")
+                  q-icon(name="place" :color="securityColor(props.row.solar_system_security_status)" v-if="props.row.solar_system_security_status").q-mr-xs
+                  | {{ props.row.solar_system_name }}
                   q-icon(name="home" v-if="props.row.station_id > 0")
-                  q-tooltip(content-class="bg-dark")
-                    q-badge(color="primary") {{ props.row.solar_system_id }}
+                  q-tooltip(content-class="bg-dark")  {{ props.row.solar_system_security_status ? props.row.solar_system_security_status.toFixed(1) : '' }}
+                    q-badge(color="primary").on-right {{ props.row.solar_system_id }}
                 q-td(key="jumps" :props="props") {{ (props.row.jumps !== -1) ? props.row.jumps : '∞' }}
                 q-td(key="wing_id" :props="props") {{ props.row.wing_name }}
                   q-tooltip
@@ -420,10 +422,10 @@ export default {
           return ({ name: response.data.name, mass: response.data.mass })
         }
       } else if (id < 40000000) {
-        if (result) return result.name
+        if (result) return ({ name: result.name, security_status: result.security_status })
         else {
           const response = await this.$axios(`https://esi.evetech.net/latest/universe/systems/${id}/?datasource=tranquility&language=en-us`)
-          this.$db.names.update({ _id: id }, { _id: id, name: response.data.name }, { upsert: true })
+          this.$db.names.update({ _id: id }, { _id: id, name: response.data.name, security_status: response.data.security_status }, { upsert: true })
           return response.data.name
         }
       } else {
@@ -548,13 +550,14 @@ export default {
               member.ship_type_name = ship.name
               member.ship_type_mass = ship.mass
               const systemName = await this.getName(member.solar_system_id)
-              member.solar_system_name = systemName
+              member.solar_system_name = systemName.name
+              member.solar_system_security_status = systemName.security_status
               member.wing_name = idName[member.wing_id]
               member.squad_name = idName[member.squad_id]
               this.putFleet.members.push(member)
             }
             socket.emit('boss', this.putFleet)
-            await this.getJumps(this.location.solar_system_id, this.solarSystemName)
+            await this.getJumps(this.location.solar_system_id, this.solarSystemName.name)
             this.membersData = [...this.putFleet.members]
             this.refreshFilteredData()
             setTimeout(() => { this.loadingMembers = false }, 1000)
@@ -627,6 +630,34 @@ export default {
         throw e
       }
     },
+    securityColor (n) {
+      switch (n.toFixed(1)) {
+        case '1.0':
+          return 'sec10'
+        case '0.9':
+          return 'sec09'
+        case '0.8':
+          return 'sec08'
+        case '0.7':
+          return 'sec07'
+        case '0.6':
+          return 'sec06'
+        case '0.5':
+          return 'sec05'
+        case '0.4':
+          return 'sec04'
+        case '0.3':
+          return 'sec03'
+        case '0.2':
+          return 'sec02'
+        case '0.1':
+          return 'sec01'
+        case '-1.0':
+          return 'secwh'
+        default:
+          return 'sec00'
+      }
+    },
     customSort (rows, sortBy, descending) {
       let data = [...rows]
       data.sort(firstBy('wing_id')
@@ -658,7 +689,7 @@ export default {
     async refreshFleet (fleet) {
       this.loadingMembers = true
       this.putFleet = fleet
-      await this.getJumps(this.location.solar_system_id, this.solarSystemName)
+      await this.getJumps(this.location.solar_system_id, this.solarSystemName.name)
       this.membersData = [...this.putFleet.members]
       this.refreshFilteredData()
       setTimeout(() => {
