@@ -11,6 +11,7 @@ export default async ({ Vue }) => {
     db.characters = new DataStore({ filename: 'characters', autoload: true, timestampData: true })
     await db.characters.ensureIndex({ fieldName: 'updatedAt', expireAfterSeconds: 3600 * 24 })
     db.names = new DataStore({ filename: 'names', autoload: true })
+    await db.names.remove({ _id: { $gt: 30000000 }, security_status: { $exists: false } }, { multi: true })
     db.jumps = new DataStore({ filename: 'jumps', autoload: true })
   } catch (e) {
     console.error(e)
