@@ -426,7 +426,7 @@ export default {
         else {
           const response = await this.$axios(`https://esi.evetech.net/latest/universe/systems/${id}/?datasource=tranquility&language=en-us`)
           this.$db.names.update({ _id: id }, { _id: id, name: response.data.name, security_status: response.data.security_status }, { upsert: true })
-          return response.data.name
+          return ({ name: response.data.name, security_status: response.data.security_status })
         }
       } else {
         const character = await this.getCharacter(id)
