@@ -137,57 +137,57 @@
         q-card(style="width: calc((100vw - (16px * 3 + 2px)) * 0.5); height: calc((100vh - 50px - (16px * 3)) * 0.4").bg-dark.flex
           .row.no-warp
             .col-9
-              q-table(title="Defense - tank (demo)" style="width: calc((100vw - 48px) * 0.5 *0.75);" flat dense dark :data="attacksUsData" :columns="columnsAttacks" :pagination.sync="pagination").bg-dark.bottomtable
+              q-table(title="Defense - tank (demo)" style="width: calc((100vw - 48px) * 0.5 *0.75);" flat dense dark :data="attacksUsData" :columns="columnsAttacks" :pagination.sync="paginationAttacks").bg-dark.bottomtable
                 //- Données table Attacks on Us
                 template(v-slot:body="props")
                   q-tr(:props="props")
-                    q-td(key="opponent_name" :props="props")
+                    q-td(key="name" :props="props")
                       q-chip(dense dark color="dark" text-color="light")
                         q-avatar
                           img(:src="`https://imageserver.eveonline.com/Character/${props.row.id}_64.jpg`")
                         | {{ props.row.name }}
                       q-tooltip
                         q-badge(color="primary") {{ props.row.id }}
-                    q-td(key="opponent_corp_name" :props="props") {{ props.row.corporation_ticker }}
+                    q-td(key="corp_name" :props="props") {{ props.row.corporation_ticker }}
                       q-tooltip
                         q-card.bg-dark
                           q-card-section {{ props.row.corporation_name }}
                             q-badge(color="primary").on-right {{ props.row.corporation_id }}
                           q-card-section(v-if="props.row.alliance_id") {{ props.row.alliance_name }}
                             q-badge(color="primary").on-right {{ props.row.alliance_id }}
-                    q-td(key="opponent_ship_type_name" :props="props")
-                      q-chip(dense dark color="dark" text-color="light")
+                    q-td(key="ship_type_name" :props="props")
+                      q-chip(v-if="props.row.ship_type_name" dense dark color="dark" text-color="light")
                         q-avatar
                           img(:src="`https://image.eveonline.com/Render/${props.row.ship_type_id}_64.png`")
                         | {{ props.row.ship_type_name }}
                         q-tooltip
                           q-badge(color="primary") {{ props.row.ship_type_id }}
-                    q-td(key="opponent_actions" :props="props")
-                      q-btn(dense flat v-if="props.row.dps" icon="img:https://image.eveonline.com/Type/561_64.png")
+                    q-td(key="actions" :props="props")
+                      q-btn(dense flat v-if="props.row.dps" icon="img:https://image.eveonline.com/Type/561_64.png") {{ props.row.dps | integer }}
                         q-tooltip  {{ props.row.dps }} DPS
                       q-btn(dense flat v-if="props.row.scramble" icon="img:https://image.eveonline.com/Type/447_64.png")
-                        q-badge(color="negative" floating transparent) {{ props.row.scramble }}
+                        //- q-badge(color="negative" floating transparent) {{ props.row.scramble }}
                         q-tooltip Scramble
                       q-btn(dense flat v-if="props.row.disrupt" icon="img:https://image.eveonline.com/Type/3242_64.png")
-                        q-badge(color="negative" floating transparent) {{ props.row.disrupt }}
+                        //- q-badge(color="negative" floating transparent) {{ props.row.disrupt }}
                         q-tooltip Disrupt
                       q-btn(dense flat v-if="props.row.web" icon="img:https://image.eveonline.com/Type/526_64.png")
-                        q-badge(color="negative" floating transparent) {{ props.row.web }}
+                        //- q-badge(color="negative" floating transparent) {{ props.row.web }}
                         q-tooltip Web
                       q-btn(dense flat v-if="props.row.neutra" icon="img:https://image.eveonline.com/Type/533_64.png")
-                        q-badge(color="negative" floating transparent) {{ props.row.neutra }}
+                        //- q-badge(color="negative" floating transparent) {{ props.row.neutra }}
                         q-tooltip Neutra
                       q-btn(dense flat v-if="props.row.ecm" icon="img:https://image.eveonline.com/Type/1957_64.png")
-                        q-badge(color="negative" floating transparent) {{ props.row.ecm }}
+                        //- q-badge(color="negative" floating transparent) {{ props.row.ecm }}
                         q-tooltip ECM
                 template(v-slot:bottom="props")
             .col-3
-              .text-light.text-right.q-mt-sm.q-mr-sm {{ dataset[dataset.length-1][1] }} DPS
-              column-chart(label="DPS" :data="dataset" :library="datasetOptions" :colors="['#DC3545']" id="left-chart")
+              .text-light.text-right.q-mt-sm.q-mr-sm {{ lastDpsAttacksUs | integer }} DPS
+              column-chart(label="DPS" :data="datasetAttacks" :library="datasetOptions" :colors="['#DC3545', '#9C1C28']" id="left-chart")
         q-card(style="width: calc((100vw - (16px * 3 + 2px)) * 0.5); height: calc((100vh - 50px - (16px * 3)) * 0.4").bg-dark.flex
           .row.no-warp
             .col.col-9
-              q-table(title="DPS / Ewar applied (demo)" style="width: calc((100vw - 48px) * 0.5 *0.75);" flat dense dark :data="attacksOpponentsData" :columns="columnsAttacks" :pagination.sync="pagination").bg-dark.bottomtable
+              q-table(title="DPS / Ewar applied (demo)" style="width: calc((100vw - 48px) * 0.5 *0.75);" flat dense dark :data="attacksOpponentsData" :columns="columnsOpponents" :pagination.sync="paginationOpponents").bg-dark.bottomtable
                 //- Données table Attacks on Opponents
                 template(v-slot:body="props")
                   q-tr(:props="props")
@@ -206,34 +206,34 @@
                           q-card-section(v-if="props.row.alliance_id") {{ props.row.alliance_name }}
                             q-badge(color="primary").on-right {{ props.row.alliance_id }}
                     q-td(key="opponent_ship_type_name" :props="props")
-                      q-chip(dense dark color="dark" text-color="light")
+                      q-chip(v-if="props.row.ship_type_name" dense dark color="dark" text-color="light")
                         q-avatar
                           img(:src="`https://image.eveonline.com/Render/${props.row.ship_type_id}_64.png`")
                         | {{ props.row.ship_type_name }}
                         q-tooltip
                           q-badge(color="primary") {{ props.row.ship_type_id }}
                     q-td(key="opponent_actions" :props="props")
-                      q-btn(dense flat v-if="props.row.dps" icon="img:https://image.eveonline.com/Type/561_64.png")
+                      q-btn(dense flat v-if="props.row.dps" icon="img:https://image.eveonline.com/Type/561_64.png") {{ props.row.dps | integer }}
                         q-tooltip {{ props.row.dps }} DPS
                       q-btn(dense flat v-if="props.row.scramble" icon="img:https://image.eveonline.com/Type/447_64.png")
-                        q-badge(color="positive" floating transparent) {{ props.row.scramble }}
+                        //- q-badge(color="positive" floating transparent) {{ props.row.scramble }}
                         q-tooltip Scramble
                       q-btn(dense flat v-if="props.row.disrupt" icon="img:https://image.eveonline.com/Type/3242_64.png")
-                        q-badge(color="positive" floating transparent) {{ props.row.disrupt }}
+                        //- q-badge(color="positive" floating transparent) {{ props.row.disrupt }}
                         q-tooltip Disrupt
                       q-btn(dense flat v-if="props.row.web" icon="img:https://image.eveonline.com/Type/526_64.png")
-                        q-badge(color="positive" floating transparent) {{ props.row.web }}
+                        //- q-badge(color="positive" floating transparent) {{ props.row.web }}
                         q-tooltip Web
                       q-btn(dense flat v-if="props.row.neutra" icon="img:https://image.eveonline.com/Type/533_64.png")
-                        q-badge(color="positive" floating transparent) {{ props.row.neutra }}
+                        //- q-badge(color="positive" floating transparent) {{ props.row.neutra }}
                         q-tooltip Neutra
                       q-btn(dense flat v-if="props.row.ecm" icon="img:https://image.eveonline.com/Type/1957_64.png")
-                        q-badge(color="positive" floating transparent) {{ props.row.ecm }}
+                        //- q-badge(color="positive" floating transparent) {{ props.row.ecm }}
                         q-tooltip ECM
                 template(v-slot:bottom="props")
             .col.col-3
-              .text-light.text-right.q-mt-sm.q-mr-sm {{ dataset2[dataset2.length-1][1] }} DPS
-              column-chart(label="DPS" :data="dataset2" :library="datasetOptions" :colors="['#28A745']" id="right-chart")
+              .text-light.text-right.q-mt-sm.q-mr-sm {{ lastDpsAttacksOpponents | integer }} DPS
+              column-chart(label="DPS" :data="datasetOpponents" :library="datasetOptions" :colors="['#28A745', '#186329']" id="right-chart")
 </template>
 
 <style>
@@ -251,11 +251,24 @@ const mutex = new Mutex()
 
 export default {
   name: 'PageIndex',
+  filters: {
+    integer: function (value) {
+      return Math.round(Number(value))
+    }
+  },
   data () {
     return {
       // dataset: [32, 500, 1492, 1200], 15 max
       dataset: [['2019-08-14T09:29:30Z', 0], ['2019-08-14T09:29:40Z', 72], ['2019-08-14T09:29:50Z', 0], ['2019-08-14T09:30:00Z', 32], ['2019-08-14T09:30:10Z', 500], ['2019-08-14T09:30:20Z', 1492], ['2019-08-14T09:30:30Z', 1200], ['2019-08-14T09:30:40Z', 999], ['2019-08-14T09:30:50Z', 1229], ['2019-08-14T09:31:00Z', 685], ['2019-08-14T09:31:10Z', 999], ['2019-08-14T09:31:20Z', 999], ['2019-08-14T09:31:30Z', 999], ['2019-08-14T09:31:40Z', 999], ['2019-08-14T09:31:50Z', 756]],
       dataset2: [['2019-08-14T09:29:30Z', 100], ['2019-08-14T09:29:40Z', 172], ['2019-08-14T09:29:50Z', 450], ['2019-08-14T09:30:00Z', 560], ['2019-08-14T09:30:10Z', 800], ['2019-08-14T09:30:20Z', 820], ['2019-08-14T09:30:30Z', 750], ['2019-08-14T09:30:40Z', 820], ['2019-08-14T09:30:50Z', 896], ['2019-08-14T09:31:00Z', 980], ['2019-08-14T09:31:10Z', 800], ['2019-08-14T09:31:20Z', 478], ['2019-08-14T09:31:30Z', 589], ['2019-08-14T09:31:40Z', 258], ['2019-08-14T09:31:50Z', 489]],
+      datasetAttacks: [{ name: 'DPS', data: [] }, { name: 'Alpha', data: [] }],
+      datasetOpponents: [{ name: 'DPS', data: [] }, { name: 'Alpha', data: [] }],
+      lastDpsAttacksUs: 0,
+      lastDpsAttacksOpponents: 0,
+      alphaAttacks: [],
+      alphaOpponents: [],
+      dpsAttacks: [],
+      dpsOpponents: [],
       datasetOptions: {
         hover: {
           intersect: false,
@@ -274,7 +287,7 @@ export default {
                 return ''
               }
             },
-            barPercentage: 0.9
+            barPercentage: 1
           }]
         }
       },
@@ -309,42 +322,56 @@ export default {
         { name: 'squad_id', align: 'center', label: 'Squad', field: 'squad_id', sortable: false }
       ],
       opponentsData: [
-        { name: 'adward kisaragi', id: 2112237020, corporation_name: 'Fish Vending Machine', corporation_ticker: 'FSHVM', corporation_id: 98494391, ship_type_name: 'Gnosis', ship_type_id: 3756, dps: 400, neutra: 0, scramble: 1, disrupt: 1, web: 0, ecm: 1 },
-        { name: 'Nae In Saeng', id: 2114754085, corporation_name: 'Fish Vending Machine', corporation_ticker: 'FSHVM', corporation_id: 98494391, ship_type_name: 'Vindicator', ship_type_id: 17740, dps: 400, neutra: 0, scramble: 0, disrupt: 0, web: 1, ecm: 0 },
-        { name: 'ewqqw kinux98', id: 2115175252, corporation_name: 'Fish Vending Machine', corporation_ticker: 'FSHVM', corporation_id: 98494391, ship_type_name: 'Bhaalgorn', ship_type_id: 17920, dps: 0, neutra: 1, scramble: 0, disrupt: 0, web: 0, ecm: 0 },
-        { name: 'BaySalt', id: 94740066, corporation_name: 'Fish Vending Machine', corporation_ticker: 'FSHVM', corporation_id: 98494391, ship_type_name: 'Leshak', ship_type_id: 47271, dps: 400, neutra: 1, scramble: 0, disrupt: 0, web: 1, ecm: 0 },
-        { name: 'Baysalt Delta', id: 2115022711, corporation_name: 'Fish Vending Machine', corporation_ticker: 'FSHVM', corporation_id: 98494391, ship_type_name: 'Sabre', ship_type_id: 22456, dps: 400, neutra: 0, scramble: 1, disrupt: 0, web: 0, ecm: 0 },
-        { name: 'Toon 2', id: 0, corporation_name: 'Goonswarm Federation', corporation_ticker: 'CONDI', corporation_id: 1354830081, ship_type_name: 'Gnosis', ship_type_id: 3756, dps: 400, neutra: 0, scramble: 0, disrupt: 0, web: 0, ecm: 0 },
-        { name: 'Toon 1', id: 0, corporation_name: 'Goonswarm Federation', corporation_ticker: 'CONDI', corporation_id: 1354830081, ship_type_name: 'Gnosis', ship_type_id: 3756, dps: 400, neutra: 0, scramble: 0, disrupt: 0, web: 0, ecm: 0 },
-        { name: 'Toon 3', id: 0, corporation_name: 'Goonswarm Federation', corporation_ticker: 'CONDI', corporation_id: 1354830081, ship_type_name: 'Gnosis', ship_type_id: 3756, dps: 400, neutra: 0, scramble: 0, disrupt: 0, web: 0, ecm: 0 },
-        { name: 'Toon 4', id: 0, corporation_name: 'Goonswarm Federation', corporation_ticker: 'CONDI', corporation_id: 1354830081, ship_type_name: 'Gnosis', ship_type_id: 3756, dps: 400, neutra: 0, scramble: 0, disrupt: 0, web: 0, ecm: 0 },
-        { name: 'Toon 5', id: 0, corporation_name: 'Goonswarm Federation', corporation_ticker: 'CONDI', corporation_id: 1354830081, ship_type_name: 'Gnosis', ship_type_id: 3756, dps: 400, neutra: 0, scramble: 0, disrupt: 0, web: 0, ecm: 0 },
-        { name: 'Toon 6', id: 0, corporation_name: 'Goonswarm Federation', corporation_ticker: 'CONDI', corporation_id: 1354830081, ship_type_name: 'Gnosis', ship_type_id: 3756, dps: 400, neutra: 0, scramble: 0, disrupt: 0, web: 0, ecm: 0 },
-        { name: 'Toon 7', id: 0, corporation_name: 'Goonswarm Federation', corporation_ticker: 'CONDI', corporation_id: 1354830081, ship_type_name: 'Gnosis', ship_type_id: 3756, dps: 400, neutra: 0, scramble: 0, disrupt: 0, web: 0, ecm: 0 }
+        // { name: 'adward kisaragi', id: 2112237020, corporation_name: 'Fish Vending Machine', corporation_ticker: 'FSHVM', corporation_id: 98494391, ship_type_name: 'Gnosis', ship_type_id: 3756, dps: 400, neutra: 0, scramble: 1, disrupt: 1, web: 0, ecm: 1 },
+        // { name: 'Nae In Saeng', id: 2114754085, corporation_name: 'Fish Vending Machine', corporation_ticker: 'FSHVM', corporation_id: 98494391, ship_type_name: 'Vindicator', ship_type_id: 17740, dps: 400, neutra: 0, scramble: 0, disrupt: 0, web: 1, ecm: 0 },
+        // { name: 'ewqqw kinux98', id: 2115175252, corporation_name: 'Fish Vending Machine', corporation_ticker: 'FSHVM', corporation_id: 98494391, ship_type_name: 'Bhaalgorn', ship_type_id: 17920, dps: 0, neutra: 1, scramble: 0, disrupt: 0, web: 0, ecm: 0 },
+        // { name: 'BaySalt', id: 94740066, corporation_name: 'Fish Vending Machine', corporation_ticker: 'FSHVM', corporation_id: 98494391, ship_type_name: 'Leshak', ship_type_id: 47271, dps: 400, neutra: 1, scramble: 0, disrupt: 0, web: 1, ecm: 0 },
+        // { name: 'Baysalt Delta', id: 2115022711, corporation_name: 'Fish Vending Machine', corporation_ticker: 'FSHVM', corporation_id: 98494391, ship_type_name: 'Sabre', ship_type_id: 22456, dps: 400, neutra: 0, scramble: 1, disrupt: 0, web: 0, ecm: 0 },
+        // { name: 'Toon 2', id: 0, corporation_name: 'Goonswarm Federation', corporation_ticker: 'CONDI', corporation_id: 1354830081, ship_type_name: 'Gnosis', ship_type_id: 3756, dps: 400, neutra: 0, scramble: 0, disrupt: 0, web: 0, ecm: 0 },
+        // { name: 'Toon 1', id: 0, corporation_name: 'Goonswarm Federation', corporation_ticker: 'CONDI', corporation_id: 1354830081, ship_type_name: 'Gnosis', ship_type_id: 3756, dps: 400, neutra: 0, scramble: 0, disrupt: 0, web: 0, ecm: 0 },
+        // { name: 'Toon 3', id: 0, corporation_name: 'Goonswarm Federation', corporation_ticker: 'CONDI', corporation_id: 1354830081, ship_type_name: 'Gnosis', ship_type_id: 3756, dps: 400, neutra: 0, scramble: 0, disrupt: 0, web: 0, ecm: 0 },
+        // { name: 'Toon 4', id: 0, corporation_name: 'Goonswarm Federation', corporation_ticker: 'CONDI', corporation_id: 1354830081, ship_type_name: 'Gnosis', ship_type_id: 3756, dps: 400, neutra: 0, scramble: 0, disrupt: 0, web: 0, ecm: 0 },
+        // { name: 'Toon 5', id: 0, corporation_name: 'Goonswarm Federation', corporation_ticker: 'CONDI', corporation_id: 1354830081, ship_type_name: 'Gnosis', ship_type_id: 3756, dps: 400, neutra: 0, scramble: 0, disrupt: 0, web: 0, ecm: 0 },
+        // { name: 'Toon 6', id: 0, corporation_name: 'Goonswarm Federation', corporation_ticker: 'CONDI', corporation_id: 1354830081, ship_type_name: 'Gnosis', ship_type_id: 3756, dps: 400, neutra: 0, scramble: 0, disrupt: 0, web: 0, ecm: 0 },
+        // { name: 'Toon 7', id: 0, corporation_name: 'Goonswarm Federation', corporation_ticker: 'CONDI', corporation_id: 1354830081, ship_type_name: 'Gnosis', ship_type_id: 3756, dps: 400, neutra: 0, scramble: 0, disrupt: 0, web: 0, ecm: 0 }
       ],
       attacksUsData: [
-        { name: 'Marionne', id: 93850133, corporation_name: 'Hidden Baguette', corporation_ticker: 'BAG8', corporation_id: 98591576, ship_type_name: 'Leshak', ship_type_id: 47271, dps: 968, neutra: 2, scramble: 1, disrupt: 0, web: 0, ecm: 1 },
-        { name: 'XOS Psymon', id: 1653852557, corporation_name: 'Ehefkae', corporation_ticker: 'KAE.', corporation_id: 98599547, ship_type_name: 'Damnation', ship_type_id: 22474, dps: 156, neutra: 0, scramble: 0, disrupt: 1, web: 1, ecm: 0 }
+        // { name: 'Marionne', id: 93850133, corporation_name: 'Hidden Baguette', corporation_ticker: 'BAG8', corporation_id: 98591576, ship_type_name: 'Leshak', ship_type_id: 47271, dps: 968, neutra: 2, scramble: 1, disrupt: 0, web: 0, ecm: 1 },
+        // { name: 'XOS Psymon', id: 1653852557, corporation_name: 'Ehefkae', corporation_ticker: 'KAE.', corporation_id: 98599547, ship_type_name: 'Damnation', ship_type_id: 22474, dps: 156, neutra: 0, scramble: 0, disrupt: 1, web: 1, ecm: 0 }
       ],
       attacksOpponentsData: [
-        { name: 'ewqqw kinux98', id: 2115175252, corporation_name: 'Fish Vending Machine', corporation_ticker: 'FSHVM', corporation_id: 98494391, ship_type_name: 'Vindicator', ship_type_id: 17740, dps: 1856, neutra: 1, scramble: 0, disrupt: 0, web: 0, ecm: 0 },
-        { name: 'Baysalt Delta', id: 2115022711, corporation_name: 'Fish Vending Machine', corporation_ticker: 'FSHVM.', corporation_id: 98494391, ship_type_name: 'Sabre', ship_type_id: 22456, dps: 159, neutra: 0, scramble: 0, disrupt: 1, web: 1, ecm: 0 }
+        // { name: 'ewqqw kinux98', id: 2115175252, corporation_name: 'Fish Vending Machine', corporation_ticker: 'FSHVM', corporation_id: 98494391, ship_type_name: 'Vindicator', ship_type_id: 17740, dps: 1856, neutra: 1, scramble: 0, disrupt: 0, web: 0, ecm: 0 },
+        // { name: 'Baysalt Delta', id: 2115022711, corporation_name: 'Fish Vending Machine', corporation_ticker: 'FSHVM.', corporation_id: 98494391, ship_type_name: 'Sabre', ship_type_id: 22456, dps: 159, neutra: 0, scramble: 0, disrupt: 1, web: 1, ecm: 0 }
       ],
       columnsOpponents: [
         { name: 'opponent_name', align: 'left', label: 'Name', field: 'name', sortable: false },
         { name: 'opponent_corp_name', align: 'center', label: 'Corp', field: 'corporation_ticker', sortable: false },
         { name: 'opponent_ship_type_name', align: 'left', label: 'Ship', field: 'ship_type_name', sortable: false },
-        { name: 'opponent_actions', align: 'left', label: 'Actions', sortable: false }
+        { name: 'opponent_actions', align: 'left', label: 'Actions', field: 'dps_in', sortable: true }
       ],
       columnsAttacks: [
-        { name: 'opponent_name', align: 'left', label: 'Name', field: 'name', sortable: false },
-        { name: 'opponent_corp_name', align: 'center', label: 'Corp', field: 'corporation_ticker', sortable: false },
-        { name: 'opponent_ship_type_name', align: 'left', label: 'Ship', field: 'ship_type_name', sortable: false },
-        { name: 'opponent_actions', align: 'left', label: 'Actions', sortable: false }
+        { name: 'name', align: 'left', label: 'Name', field: 'name', sortable: false },
+        { name: 'corp_name', align: 'center', label: 'Corp', field: 'corporation_ticker', sortable: false },
+        { name: 'ship_type_name', align: 'left', label: 'Ship', field: 'ship_type_name', sortable: false },
+        { name: 'actions', align: 'left', label: 'Actions', field: 'dps_in', sortable: true }
       ],
       pagination: {
         sortBy: 'character_name',
         descending: false,
+        page: 1,
+        rowsPerPage: 10000
+        // rowsNumber: xx if getting data from a server
+      },
+      paginationAttacks: {
+        sortBy: 'dps_in',
+        descending: true,
+        page: 1,
+        rowsPerPage: 10000
+        // rowsNumber: xx if getting data from a server
+      },
+      paginationOpponents: {
+        sortBy: 'dps_in',
+        descending: true,
         page: 1,
         rowsPerPage: 10000
         // rowsNumber: xx if getting data from a server
@@ -412,6 +439,32 @@ export default {
         }
       }
     },
+    async getCharacterId (name) {
+      console.log('getCharacterId', name)
+      const result = await this.$db.characters.findOne({ name: name })
+      if (result) { return result._id }
+      try {
+        const response = await this.$axios.post('https://esi.evetech.net/latest/universe/ids/?datasource=tranquility&language=en-us', [name])
+        console.log(response.data)
+        const id = response.data.characters[0].id
+        const characterPromise = await this.$axios(`https://esi.evetech.net/latest/characters/${id}/?datasource=tranquility&language=en-us`)
+        let character = characterPromise.data
+        if (character.alliance_id > 0) {
+          const corporationPromise = this.$axios(`https://esi.evetech.net/latest/corporations/${character.corporation_id}/?datasource=tranquility&language=en-us`)
+          const alliancePromise = this.$axios(`https://esi.evetech.net/latest/alliances/${character.alliance_id}/?datasource=tranquility&language=en-us`)
+          const [corporation, alliance] = await Promise.all([corporationPromise, alliancePromise])
+          this.$db.characters.update({ _id: id }, { _id: id, character: character, corporation: corporation.data, alliance: alliance.data }, { upsert: true })
+        } else {
+          const corporationPromise = await this.$axios(`https://esi.evetech.net/latest/corporations/${character.corporation_id}/?datasource=tranquility&language=en-us`)
+          let corporation = corporationPromise.data
+          let alliance = { id: 0, name: 'No Alliance' }
+          this.$db.characters.update({ _id: id }, { _id: id, character: character, corporation: corporation, alliance: alliance }, { upsert: true })
+        }
+        return id
+      } catch (e) {
+        console.error('Error getCharacterId', e)
+      }
+    },
     async getName (id) {
       const result = await this.$db.names.findOne({ _id: id })
       if (id < 100000) {
@@ -432,6 +485,29 @@ export default {
         const character = await this.getCharacter(id)
         return character.character.name
       }
+    },
+    // Return Id for system or type name, with update of $db.names
+    async getId (name) {
+      const result = await this.$db.names.findOne({ name: name })
+      if (result) { return result._id }
+      try {
+        const response = await this.$axios.post('https://esi.evetech.net/latest/universe/ids/?datasource=tranquility&language=en-us', [name])
+        if (response.data.systems) {
+          const id = response.data.systems[0].id
+          const response2 = await this.$axios(`https://esi.evetech.net/latest/universe/systems/${id}/?datasource=tranquility&language=en-us`)
+          this.$db.names.update({ _id: id }, { _id: id, name: response2.data.name, security_status: response2.data.security_status }, { upsert: true })
+          return id
+        } else if (response.data.inventory_types) {
+          const id = response.data.inventory_types[0].id
+          const response2 = await this.$axios(`https://esi.evetech.net/latest/universe/types/${id}/?datasource=tranquility&language=en-us`)
+          this.$db.names.update({ _id: id }, { _id: id, name: response2.data.name, mass: response2.data.mass }, { upsert: true })
+          return id
+        }
+        return 0
+      } catch (e) {
+        console.error('Error getId', e)
+      }
+      return 0
     },
     async getOnline (id) {
       this.queue.delete('getOnline+Fleet')
@@ -560,6 +636,10 @@ export default {
             await this.getJumps(this.location.solar_system_id, this.solarSystemName.name)
             this.membersData = [...this.putFleet.members]
             this.refreshFilteredData()
+            for (const member of this.putFleet.members) {
+              const result = await this.$db.opponents.findOne({ name: member.character_name })
+              if (result) { this.$db.opponents.remove({ _id: result._id }) }
+            }
             setTimeout(() => { this.loadingMembers = false }, 1000)
             console.log(this.putFleet)
           } else {
@@ -692,6 +772,10 @@ export default {
       await this.getJumps(this.location.solar_system_id, this.solarSystemName.name)
       this.membersData = [...this.putFleet.members]
       this.refreshFilteredData()
+      for (const member of this.putFleet.members) {
+        const result = await this.$db.opponents.findOne({ name: member.character_name })
+        if (result) { this.$db.opponents.remove({ _id: result._id }) }
+      }
       setTimeout(() => {
         this.loadingMembers = false
       }, 1000)
@@ -801,6 +885,75 @@ export default {
         })
         socket.on('disconnect', () => {
           this.socketOn = false
+        })
+        socket.on('test_status', async (data) => {
+          const date = new Date()
+          let attacksUsData = []
+          let attacksOpponentsData = []
+          const characters = data.characters
+          const listCharacters = new Set(Object.keys(characters))
+          console.log(listCharacters.size, characters)
+          let dpsAttacksUs = 0
+          let alphaAttacksUs = 0
+          let dpsAttacksOpponents = 0
+          let alphaAttacksOpponents = 0
+          for (const characterName of listCharacters) {
+            const member = this.members.find((member) => member.character_name === characterName)
+            if (member) {
+              console.log(`${characterName} est un membre de la fleet`)
+              const id = await this.getCharacterId(characterName)
+              const character = await this.getCharacter(id)
+              // const shipTypeId = await this.getId(characters[characterName].ship_type)
+              attacksUsData.push({ name: characterName, id: id, corporation_name: character.corporation.name, corporation_ticker: character.corporation.ticker, corporation_id: character.character.corporation_id, ship_type_name: member.ship_type_name, ship_type_id: member.ship_type_id, dps: characters[characterName].dps_in, neutra: characters[characterName].neut_in, scramble: characters[characterName].scrambled, disrupt: characters[characterName].pointed, web: 0, ecm: 0 })
+              if (characters[characterName].dps_in) dpsAttacksUs += characters[characterName].dps_in
+              if (characters[characterName].alpha_in) alphaAttacksUs += characters[characterName].alpha_in
+            } else {
+              console.log(`${characterName} est un opposant`)
+              const id = await this.getCharacterId(characterName)
+              const character = await this.getCharacter(id)
+              const shipTypeId = await this.getId(characters[characterName].ship_type)
+              attacksOpponentsData.push({ name: characterName, id: id, corporation_name: character.corporation.name, corporation_ticker: character.corporation.ticker, corporation_id: character.character.corporation_id, ship_type_name: characters[characterName].ship_type, ship_type_id: shipTypeId, dps: characters[characterName].dps_in, neutra: characters[characterName].neut_in, scramble: characters[characterName].scrambled, disrupt: characters[characterName].pointed, web: 0, ecm: 0 })
+              if (characters[characterName].dps_in) dpsAttacksOpponents += characters[characterName].dps_in
+              if (characters[characterName].alpha_in) alphaAttacksOpponents += characters[characterName].alpha_in
+              const opponent = await this.$db.opponents.findOne({ name: characterName })
+              console.log('opposant en bdd', opponent)
+              if (opponent) {
+                console.log(`${characterName} est dans la liste des opposants`)
+                let update = {}
+                if (characters[characterName].dps_out) update.dps = characters[characterName].dps_out
+                if (characters[characterName].alpha_out) update.alpha = characters[characterName].alpha_out
+                if (characters[characterName].neut_out) update.neutra = characters[characterName].neut_out
+                if (characters[characterName].scrambling) update.scramble = characters[characterName].scrambling
+                if (characters[characterName].pointing) update.disrupt = characters[characterName].pointing
+                if (characters[characterName].ship_type) {
+                  update.ship_type_name = characters[characterName].ship_type
+                  update.ship_type_id = shipTypeId
+                }
+                await this.$db.opponents.update({ _id: opponent._id }, { $set: update })
+              } else {
+                console.log(`${characterName} n'est pas dans la liste des opposants`)
+                await this.$db.opponents.insert({ name: characterName, id: id, corporation_name: character.corporation.name, corporation_ticker: character.corporation.ticker, corporation_id: character.character.corporation_id, ship_type_name: characters[characterName].ship_type, ship_type_id: shipTypeId, dps: characters[characterName].dps_out, neutra: characters[characterName].neut_out, scramble: characters[characterName].scrambling, disrupt: characters[characterName].pointing, web: 0, ecm: 0 })
+              }
+            }
+          }
+          console.log('DPS_IN :', dpsAttacksUs, alphaAttacksUs)
+          console.log('DPS_OUT :', dpsAttacksOpponents, alphaAttacksOpponents)
+          this.lastDpsAttacksUs = dpsAttacksUs
+          this.lastDpsAttacksOpponents = dpsAttacksOpponents
+          if (this.datasetAttacks[0].data.length > 60) {
+            this.datasetAttacks[0].data = this.datasetAttacks[0].data.slice(1)
+            this.datasetAttacks[1].data = this.datasetAttacks[1].data.slice(1)
+            this.datasetOpponents[0].data = this.datasetOpponents[0].data.slice(1)
+            this.datasetOpponents[1].data = this.datasetOpponents[1].data.slice(1)
+          }
+          this.datasetAttacks[0].data.push([date, dpsAttacksUs])
+          this.datasetAttacks[1].data.push([date, alphaAttacksUs])
+          this.datasetOpponents[0].data.push([date, dpsAttacksOpponents])
+          this.datasetOpponents[1].data.push([date, alphaAttacksOpponents])
+          this.attacksUsData = attacksUsData
+          this.attacksOpponentsData = attacksOpponentsData
+          const opponents = await this.$db.opponents.find({})
+          this.opponentsData = opponents
         })
         this.interceptor()
         const characterPromise = await this.getCharacter(this.session.id)
