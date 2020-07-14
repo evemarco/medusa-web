@@ -73,6 +73,19 @@
                     q-tooltip(content-class="bg-dark")  Can warp fleet
                   q-icon(name="airplanemode_inactive" color="negative" v-else)
                     q-tooltip(content-class="bg-dark") Can't warp fleet
+                q-td(key="actions" :props="props")
+                  q-btn(dense flat v-if="fleetEwar.has(props.row.character_id) && fleetEwar.get(props.row.character_id).dps" icon="img:https://image.eveonline.com/Type/561_64.png") {{ fleetEwar.get(props.row.character_id).dps | integer }}
+                    q-tooltip  {{ fleetEwar.get(props.row.character_id).dps }} DPS
+                  q-btn(dense flat v-if="fleetEwar.has(props.row.character_id) && fleetEwar.get(props.row.character_id).scramble" icon="img:https://image.eveonline.com/Type/447_64.png")
+                    q-tooltip Scramble
+                  q-btn(dense flat v-if="fleetEwar.has(props.row.character_id) && fleetEwar.get(props.row.character_id).disrupt" icon="img:https://image.eveonline.com/Type/3242_64.png")
+                    q-tooltip Disrupt
+                  q-btn(dense flat v-if="fleetEwar.has(props.row.character_id) && fleetEwar.get(props.row.character_id).web" icon="img:https://image.eveonline.com/Type/526_64.png")
+                    q-tooltip Web
+                  q-btn(dense flat v-if="fleetEwar.has(props.row.character_id) && fleetEwar.get(props.row.character_id).neutra" icon="img:https://image.eveonline.com/Type/533_64.png")
+                    q-tooltip Neutra
+                  q-btn(dense flat v-if="fleetEwar.has(props.row.character_id) && fleetEwar.get(props.row.character_id).ecm" icon="img:https://image.eveonline.com/Type/1957_64.png")
+                    q-tooltip ECM
                 q-td(key="solar_system_name" :props="props")
                   q-icon(name="place" :color="securityColor(props.row.solar_system_security_status)" v-if="props.row.solar_system_security_status").q-mr-xs
                   | {{ props.row.solar_system_name }}
@@ -94,7 +107,15 @@
                       q-card-section {{ props.row.role_name }}
             template(v-slot:bottom="props")
         q-card(style="width: calc((100vw - (16px * 3 + 2px)) * 0.4); height: calc((100vh - 50px - (16px * 3)) * 0.6);").bg-dark
-          q-table(title="Opponents (demo)" dense dark :data="opponentsData" :columns="columnsOpponents" :pagination.sync="pagination").bg-dark.toptable
+          q-table(title="Opponents" dense dark :data="opponentsData" :columns="columnsOpponents" :pagination.sync="pagination").bg-dark.toptable
+            //- Barre titre gauche de la table Fleet
+            template(v-slot:top-left)
+              .q-table__title
+                span Opponents
+                q-btn(dense dark :color="maskOpponentsSelected ? 'positive' : 'negative'" icon="visibility" size="sm" @click="maskOpponentsSelected = !maskOpponentsSelected" :label="`Mask ${maskOpponentsSelected ? 'On' : 'Off'}`").on-right
+                  q-tooltip Mask selected opponents if activated
+            //- Barre titre droite de la table Fleet
+            template(v-slot:top-right)
             //- Données table Opponents
             template(v-slot:body="props")
               q-tr(:props="props")
@@ -120,8 +141,8 @@
                     q-tooltip
                       q-badge(color="primary") {{ props.row.ship_type_id }}
                 q-td(key="opponent_actions" :props="props")
-                  q-btn(dense flat v-if="props.row.dps" icon="img:https://image.eveonline.com/Type/561_64.png")
-                    q-tooltip DPS
+                  q-btn(dense flat v-if="props.row.dps" icon="img:https://image.eveonline.com/Type/561_64.png") {{ props.row.dps | integer }} / {{ props.row.alpha | integer }}
+                    q-tooltip DPS / Alpha
                   q-btn(dense flat v-if="props.row.scramble" icon="img:https://image.eveonline.com/Type/447_64.png")
                     q-tooltip Scramble
                   q-btn(dense flat v-if="props.row.disrupt" icon="img:https://image.eveonline.com/Type/3242_64.png")
@@ -137,7 +158,7 @@
         q-card(style="width: calc((100vw - (16px * 3 + 2px)) * 0.5); height: calc((100vh - 50px - (16px * 3)) * 0.4").bg-dark.flex
           .row.no-warp
             .col-9
-              q-table(title="Defense - tank (demo)" style="width: calc((100vw - 48px) * 0.5 *0.75);" flat dense dark :data="attacksUsData" :columns="columnsAttacks" :pagination.sync="paginationAttacks").bg-dark.bottomtable
+              q-table(title="Defense - tank" style="width: calc((100vw - 48px) * 0.5 *0.75);" flat dense dark :data="attacksUsData" :columns="columnsAttacks" :pagination.sync="paginationAttacks").bg-dark.bottomtable
                 //- Données table Attacks on Us
                 template(v-slot:body="props")
                   q-tr(:props="props")
@@ -187,7 +208,7 @@
         q-card(style="width: calc((100vw - (16px * 3 + 2px)) * 0.5); height: calc((100vh - 50px - (16px * 3)) * 0.4").bg-dark.flex
           .row.no-warp
             .col.col-9
-              q-table(title="DPS / Ewar applied (demo)" style="width: calc((100vw - 48px) * 0.5 *0.75);" flat dense dark :data="attacksOpponentsData" :columns="columnsOpponents" :pagination.sync="paginationOpponents").bg-dark.bottomtable
+              q-table(title="DPS / Ewar applied" style="width: calc((100vw - 48px) * 0.5 *0.75);" flat dense dark :data="attacksOpponentsData" :columns="columnsOpponents" :pagination.sync="paginationOpponents").bg-dark.bottomtable
                 //- Données table Attacks on Opponents
                 template(v-slot:body="props")
                   q-tr(:props="props")
@@ -244,6 +265,7 @@ import { mapFields } from 'vuex-map-fields'
 import { Mutex } from 'async-mutex'
 import { firstBy } from 'thenby'
 import io from 'socket.io-client'
+const TimerJob = require('timerjobs').TimerJobs
 
 const socket = io(process.env.SOCKET_IO)
 
@@ -296,6 +318,7 @@ export default {
       selected: [],
       selectedSet: new Set(),
       maskSelected: false,
+      maskOpponentsSelected: false,
       totalMass: 0,
       filteredData: [],
       // character: {},
@@ -316,6 +339,7 @@ export default {
         { name: 'character_name', align: 'left', label: 'Name', field: 'character_name', sortable: false },
         { name: 'corporation_ticker', align: 'center', label: 'Corp', field: 'corporation_ticker', sortable: false },
         { name: 'ship_type_name', align: 'left', label: 'Ship', field: 'ship_type_name', sortable: false },
+        { name: 'actions', align: 'left', label: 'Actions', field: 'dps', sortable: false },
         { name: 'solar_system_name', align: 'center', label: 'System', field: 'solar_system_name', sortable: false },
         { name: 'jumps', align: 'center', label: 'Jumps', field: 'jumps', sortable: false },
         { name: 'wing_id', align: 'center', label: 'Wing', field: 'wing_id', sortable: false },
@@ -376,6 +400,7 @@ export default {
         rowsPerPage: 10000
         // rowsNumber: xx if getting data from a server
       },
+      fleetEwar: new Map(),
       receiveFleet: false,
       putFleet: {}
       // putFleet: {
@@ -411,6 +436,27 @@ export default {
       return btoa(`${process.env.CLIENT_ID}:${this.session.token}`)
     }
   },
+  // cron: [{
+  //   time: 15000,
+  //   method: 'getOnline',
+  //   autoStart: true
+  // }, {
+  //   time: 5000,
+  //   method: 'getLocation',
+  //   autoStart: true
+  // }, {
+  //   time: 5000,
+  //   method: 'getShip',
+  //   autoStart: true
+  // }, {
+  //   time: 15000,
+  //   method: 'getFleet',
+  //   autoStart: false
+  // }, {
+  //   time: 5000,
+  //   method: 'getFleetMembers',
+  //   autoStart: true
+  // }],
   methods: {
     async getCharacter (id) {
       const result = await this.$db.characters.findOne({ _id: id })
@@ -486,11 +532,12 @@ export default {
         return character.character.name
       }
     },
-    // Return Id for system or type name, with update of $db.names
+    // Return Id for system or type name, with update of $db.names, return 25 (Corpse Male) for pod
     async getId (name) {
       const result = await this.$db.names.findOne({ name: name })
       if (result) { return result._id }
       try {
+        if (name === 'Capsule') return 25
         const response = await this.$axios.post('https://esi.evetech.net/latest/universe/ids/?datasource=tranquility&language=en-us', [name])
         if (response.data.systems) {
           const id = response.data.systems[0].id
@@ -509,23 +556,28 @@ export default {
       }
       return 0
     },
-    async getOnline (id) {
-      this.queue.delete('getOnline+Fleet')
+    async getOnline () {
+      const id = this.session.id
+      this.queue.set('getOnline', true)
       this.update = new Date()
       try {
         console.log('Check Online')
         const onlinePromise = await this.$axios(`https://esi.evetech.net/latest/characters/${id}/online/?datasource=tranquility&language=en-us`, { headers: { Authorization: `Bearer ${this.session.token}` } })
         this.online = onlinePromise.data
-        await this.getFleet(id)
+        // await this.getFleet(id)
+        // this.$cron.start('getFleet')
+        // this.getFleet()
       } catch (e) {
         console.error('Error getOnline', e)
       } finally {
-        this.queue.set('getOnline+Fleet', setTimeout(this.getOnline, 60000, id))
+        // this.queue.set('getOnline+Fleet', setTimeout(this.getOnline, 60000, id))
+        this.queue.set('getOnline', false)
         this.update = new Date()
       }
     },
-    async getLocation (id) {
-      this.queue.delete('getLocation')
+    async getLocation () {
+      const id = this.session.id
+      this.queue.set('getLocation', true)
       this.update = new Date()
       try {
         console.log('Check Location')
@@ -538,12 +590,14 @@ export default {
       } catch (e) {
         console.error('Error getLocation', e)
       } finally {
-        this.queue.set('getLocation', setTimeout(this.getLocation, 5000, id))
+        // this.queue.set('getLocation', setTimeout(this.getLocation, 5000, id))
+        this.queue.set('getLocation', false)
         this.update = new Date()
       }
     },
-    async getShip (id) {
-      this.queue.delete('getShip')
+    async getShip () {
+      const id = this.session.id
+      this.queue.set('getShip', true)
       this.update = new Date()
       try {
         console.log('Check Ship')
@@ -554,11 +608,14 @@ export default {
       } catch (e) {
         console.error('Error getShip', e)
       } finally {
-        this.queue.set('getShip', setTimeout(this.getShip, 5000, id))
+        // this.queue.set('getShip', setTimeout(this.getShip, 5000, id))
+        this.queue.set('getShip', false)
         this.update = new Date()
       }
     },
-    async getFleet (id) {
+    async getFleet () {
+      const id = this.session.id
+      this.queue.set('getFleet', true)
       console.log('Check Fleet')
       try {
         if (this.online.online) {
@@ -579,15 +636,18 @@ export default {
           console.error('Error getFleet', e)
         }
       }
+      this.queue.set('getFleet', false)
       // setTimeout(this.getFleet, 60000, id)
     },
-    async getFleetMembers (id) {
-      this.queue.delete('getFleetMembers')
+    async getFleetMembers () {
+      const id = this.session.id
+      // this.queue.set('getFleetMembers', true)
       this.update = new Date()
       try {
         console.log('Check Fleet Members', this.fleet.fleet_id)
         // console.log(this.fleet.fleet_id, this.fleet.fleet_boss_id, id)
         if (this.fleet.hasOwnProperty('fleet_id') && this.online.online) {
+          this.queue.set('getFleetMembers', true)
           if (this.fleet.fleet_boss_id === id) {
             this.receiveFleet = false
             this.loadingMembers = true
@@ -632,6 +692,7 @@ export default {
               member.squad_name = idName[member.squad_id]
               this.putFleet.members.push(member)
             }
+            this.queue.set('getFleetMembers', false)
             socket.emit('boss', this.putFleet)
             await this.getJumps(this.location.solar_system_id, this.solarSystemName.name)
             this.membersData = [...this.putFleet.members]
@@ -643,10 +704,12 @@ export default {
             setTimeout(() => { this.loadingMembers = false }, 1000)
             console.log(this.putFleet)
           } else {
+            this.queue.set('getFleetMembers', false)
             this.receiveFleet = true
           }
         } else {
           // console.log('Ignore fleetMembers')
+          this.queue.set('getFleetMembers', false)
           this.receiveFleet = false
           // this.putFleet = {}
         }
@@ -662,7 +725,8 @@ export default {
           console.error('Error getFleetMembers', e)
         }
       } finally {
-        this.queue.set('getFleetMembers', setTimeout(this.getFleetMembers, 5000, id))
+        // this.queue.set('getFleetMembers', setTimeout(this.getFleetMembers, 5000, id))
+        this.queue.set('getFleetMembers', false)
         this.update = new Date()
       }
     },
@@ -780,18 +844,36 @@ export default {
         this.loadingMembers = false
       }, 1000)
     },
-    startQueue (id) {
-      this.getOnline(id)
-      this.getLocation(id)
-      this.getShip(id)
-      // this.getFleet(this.session.id)
-      this.getFleetMembers(id)
+    startQueue () {
+      const getFleet = new TimerJob({ autostart: false, immediate: true, interval: 15000, infinite: true, reference: 'getFleet' }, async (done) => {
+        await this.getFleet()
+        done()
+      })
+      const getOnline = new TimerJob({ autostart: false, immediate: true, interval: 15000, infinite: true, reference: 'getOnline' }, async (done) => {
+        await this.getOnline()
+        getFleet.start()
+        done()
+      })
+      getOnline.start()
+      const getLocation = new TimerJob({ autostart: false, immediate: true, interval: 5000, infinite: true, reference: 'getLocation' }, async (done) => {
+        await this.getLocation()
+        done()
+      })
+      getLocation.start()
+      const getShip = new TimerJob({ autostart: false, immediate: true, interval: 5000, infinite: true, reference: 'getShip' }, async (done) => {
+        await this.getShip()
+        done()
+      })
+      getShip.start()
+      const getFleetMembers = new TimerJob({ autostart: false, immediate: true, interval: 5000, infinite: true, reference: 'getFleetMembers' }, async (done) => {
+        await this.getFleetMembers()
+        done()
+      })
+      getFleetMembers.start()
     },
     stopQueue () {
-      for (let [job, jobID] of this.queue) {
-        clearTimeout(jobID)
-        this.queue.delete(job)
-        this.update = new Date()
+      for (const timerJob of TimerJob.timers) {
+        timerJob.stop()
       }
     },
     interceptor () {
@@ -847,6 +929,7 @@ export default {
   },
   async mounted () {
     this.$q.notify({ message: 'Bienvenue !', color: 'primary' })
+    // this.startQueue()
   },
   watch: {
     fleet: function (newValue, oldValue) {
@@ -907,6 +990,18 @@ export default {
               attacksUsData.push({ name: characterName, id: id, corporation_name: character.corporation.name, corporation_ticker: character.corporation.ticker, corporation_id: character.character.corporation_id, ship_type_name: member.ship_type_name, ship_type_id: member.ship_type_id, dps: characters[characterName].dps_in, neutra: characters[characterName].neut_in, scramble: characters[characterName].scrambled, disrupt: characters[characterName].pointed, web: 0, ecm: 0 })
               if (characters[characterName].dps_in) dpsAttacksUs += characters[characterName].dps_in
               if (characters[characterName].alpha_in) alphaAttacksUs += characters[characterName].alpha_in
+              let ewar = {}
+              if (characters[characterName].dps_out) ewar.dps = characters[characterName].dps_out
+              else ewar.dps = 0
+              if (characters[characterName].alpha_out) ewar.alpha = characters[characterName].alpha_out
+              else ewar.alpha = 0
+              if (characters[characterName].neut_out) ewar.neutra = characters[characterName].neut_out
+              else ewar.neutra = 0
+              if (characters[characterName].scrambling) ewar.scramble = characters[characterName].scrambling
+              else ewar.scramble = 0
+              if (characters[characterName].pointing) ewar.disrupt = characters[characterName].pointing
+              else ewar.disrupt = 0
+              this.fleetEwar.set(id, ewar)
             } else {
               console.log(`${characterName} est un opposant`)
               const id = await this.getCharacterId(characterName)
@@ -915,13 +1010,13 @@ export default {
               attacksOpponentsData.push({ name: characterName, id: id, corporation_name: character.corporation.name, corporation_ticker: character.corporation.ticker, corporation_id: character.character.corporation_id, ship_type_name: characters[characterName].ship_type, ship_type_id: shipTypeId, dps: characters[characterName].dps_in, neutra: characters[characterName].neut_in, scramble: characters[characterName].scrambled, disrupt: characters[characterName].pointed, web: 0, ecm: 0 })
               if (characters[characterName].dps_in) dpsAttacksOpponents += characters[characterName].dps_in
               if (characters[characterName].alpha_in) alphaAttacksOpponents += characters[characterName].alpha_in
-              const opponent = await this.$db.opponents.findOne({ name: characterName })
+              const opponent = await this.$db.opponents.findOne({ nameShip: `${characterName}-${characters[characterName].ship_type}` })
               console.log('opposant en bdd', opponent)
               if (opponent) {
                 console.log(`${characterName} est dans la liste des opposants`)
                 let update = {}
-                if (characters[characterName].dps_out) update.dps = characters[characterName].dps_out
-                if (characters[characterName].alpha_out) update.alpha = characters[characterName].alpha_out
+                if (!opponent.dps || (characters[characterName].dps_out && characters[characterName].dps_out > opponent.dps)) update.dps = characters[characterName].dps_out
+                if (!opponent.alpha || (characters[characterName].alpha_out && characters[characterName].alpha_out > opponent.alpha)) update.alpha = characters[characterName].alpha_out
                 if (characters[characterName].neut_out) update.neutra = characters[characterName].neut_out
                 if (characters[characterName].scrambling) update.scramble = characters[characterName].scrambling
                 if (characters[characterName].pointing) update.disrupt = characters[characterName].pointing
@@ -929,10 +1024,10 @@ export default {
                   update.ship_type_name = characters[characterName].ship_type
                   update.ship_type_id = shipTypeId
                 }
-                await this.$db.opponents.update({ _id: opponent._id }, { $set: update })
+                if (update.ship_type_id) await this.$db.opponents.update({ _id: opponent._id }, { $set: update })
               } else {
                 console.log(`${characterName} n'est pas dans la liste des opposants`)
-                await this.$db.opponents.insert({ name: characterName, id: id, corporation_name: character.corporation.name, corporation_ticker: character.corporation.ticker, corporation_id: character.character.corporation_id, ship_type_name: characters[characterName].ship_type, ship_type_id: shipTypeId, dps: characters[characterName].dps_out, neutra: characters[characterName].neut_out, scramble: characters[characterName].scrambling, disrupt: characters[characterName].pointing, web: 0, ecm: 0 })
+                if (characters[characterName].ship_type) await this.$db.opponents.insert({ name: characterName, nameShip: `${characterName}-${characters[characterName].ship_type}`, id: id, corporation_name: character.corporation.name, corporation_ticker: character.corporation.ticker, corporation_id: character.character.corporation_id, ship_type_name: characters[characterName].ship_type, ship_type_id: shipTypeId, dps: characters[characterName].dps_out, alpha: characters[characterName].alpha_out, neutra: characters[characterName].neut_out, scramble: characters[characterName].scrambling, disrupt: characters[characterName].pointing, web: 0, ecm: 0 })
               }
             }
           }
@@ -960,7 +1055,7 @@ export default {
         this.character = characterPromise.character
         this.corporation = characterPromise.corporation
         this.alliance = characterPromise.alliance
-        this.startQueue(this.session.id)
+        this.startQueue()
       }
     }
   },

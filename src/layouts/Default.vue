@@ -12,6 +12,7 @@
               q-card.bg-dark
                 q-card-section(v-for="(item, index) of queue" :key="item[0]") {{ item[0] }}
                   q-badge(color="primary").on-right.float-right {{ item[1] }}
+          q-btn(flat dark @click="openURL('https://dscan.info')").q-ml-md.bg-primary DSCAN
         //- Character
         q-chip(v-if="session != null && session.hasOwnProperty('id')" dark color="dark" text-color="light")
           q-avatar

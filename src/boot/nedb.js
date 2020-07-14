@@ -16,8 +16,8 @@ export default async ({ Vue }) => {
     await db.names.ensureIndex({ fieldName: 'name', unique: true })
     db.jumps = new DataStore({ filename: 'jumps', autoload: true })
     db.opponents = new DataStore({ inMemoryOnly: true, timestampData: true })
-    await db.opponents.ensureIndex({ fieldName: 'updatedAt', expireAfterSeconds: 1800 })
-    await db.opponents.ensureIndex({ fieldName: 'name', unique: true })
+    await db.opponents.ensureIndex({ fieldName: 'updatedAt', expireAfterSeconds: 7200 })
+    await db.opponents.ensureIndex({ fieldName: 'nameShip', unique: true })
   } catch (e) {
     console.error(e)
   }
