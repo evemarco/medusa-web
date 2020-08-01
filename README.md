@@ -2,7 +2,6 @@
 
 Web frontend for the medusa project.
 
-
 Copy .quasar.env.json.example to .quasar.env.json and edit this file with good parameters (API KEY, URL, SOCKET.IO SERVER, ...)
 
 Based on the Quasar framework (vusjs used), you need nodejs (V.10 or better) and yarn
